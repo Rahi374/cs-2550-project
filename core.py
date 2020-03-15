@@ -1,4 +1,5 @@
 from enum import Enum
+
 class ORG(Enum):
     SEQ = 1
     LSM = 2
@@ -14,8 +15,21 @@ class Core():
     disk = None
 
     def __init__(self, disk_org: ORG, mem_size: int, block_size: int):
-        disk = Storage(block_size, disk_org)
-        mem = Mem(disk, disk_org)
+        disk = create_storage(block_size, disk_org)
+        mem = create_memory(disk, block_size, disk_org)
+
+    def create_storage(self, block_size: int, disk_org: ORG):
+        if disk_org == ORG.SEQ:
+            return Storage(block_size)
+        elif disk_org == ORG.LSM:
+            return Storage(block_size)
+
+    def create_memory(self, disk, block_size: int, disk_org: ORG):
+        if disk_org == ORG.SEQ:
+            return Mem(disk, block_size)
+        elif disk_org == ORG.LSM:
+            return Mem(disk, block_size)
+
 
     def run(self, insts: list):
         for inst in insts:
