@@ -16,7 +16,7 @@ class Core():
 
     def __init__(self, disk_org: ORG, mem_size: int, block_size: int):
         disk = create_storage(block_size, disk_org)
-        mem = create_memory(disk, block_size, disk_org)
+        mem = create_memory(disk, mem_size, block_size, disk_org)
 
     def create_storage(self, block_size: int, disk_org: ORG):
         if disk_org == ORG.SEQ:
@@ -24,11 +24,11 @@ class Core():
         elif disk_org == ORG.LSM:
             return Storage(block_size)
 
-    def create_memory(self, disk, block_size: int, disk_org: ORG):
+    def create_memory(self, disk, mem_size: int, block_size: int, disk_org: ORG):
         if disk_org == ORG.SEQ:
-            return Mem(disk, block_size)
+            return Mem(disk, mem_size, block_size)
         elif disk_org == ORG.LSM:
-            return Mem(disk, block_size)
+            return Mem(disk, mem_size, block_size)
 
 
     def run(self, insts: list):
