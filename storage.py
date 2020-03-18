@@ -26,7 +26,7 @@ class Storage():
         add_mnt = 'storage_' + str(blk_size) + '_' + self.org_str
         self.create_tbl(add_mnt)
         self.mnt_path += add_mnt + '/'
-        
+
     def create_tbl(self, tbl_name: str):
         path = self.mnt_path + tbl_name + '/'
         os.mkdir(path)
@@ -38,22 +38,8 @@ class Storage():
         else:
             os.rmdir(self.mnt_path + tbl_name + '/')
         
-    def rm_dir_readonly(self, path: str):
-        '''
-        remove os's readonly flag on newly created directory
-        path: path to directory
-        '''
-        os.chmod(path, 0o777)
-
-    def rm_file_readonly(self, path: str):
-        '''
-        remove os's readonly flag on newly created file
-        path: path to file
-        '''
-        os.chmod(path, 0o666)
-
     def read_blk(self, tbl_name: str, blk_id: int):
-        f_path = self.mnt_path + tbl_name + '/' + 'block_' + str(blk_id) + '.img'
+        f_path = self.get_blk_path(tbl_name, blk_id)
 
         if not os.path.exists(self.mnt_path + tbl_name):
             raise Exception('table does not exist')
@@ -70,7 +56,7 @@ class Storage():
         if not len(blk) == self.blk_size:
             raise Exception('invalid block size')
 
-        f_path = self.mnt_path + tbl_name + '/' + 'block_' + str(blk_id) + '.img'
+        f_path = self.get_blk_path(tbl_name, blk_id)
         if not os.path.exists(self.mnt_path + tbl_name):
             raise Exception('table does not exist')
         else:
@@ -80,9 +66,27 @@ class Storage():
             return 0
 
     def rm_blk(self, tbl_name: str, blk_id: int):
-        #TODO: implement
+        os.remove(self.get_blk_path(tbl_name, blk_id))
         return 0
 
+    def rm_dir_readonly(self, path: str):
+        '''
+        remove os's readonly flag on newly created directory
+        path: path to directory
+        '''
+        os.chmod(path, 0o777)
+
+    def rm_file_readonly(self, path: str):
+        '''
+        remove os's readonly flag on newly created file
+        path: path to file
+        '''
+        os.chmod(path, 0o666)
+
+    def get_blk_path(self, tbl_name, blk_id):
+        return self.mnt_path + tbl_name + '/' + 'block_' + str(blk_id) + '.img'
+
+    
 
 if __name__ == '__main__':
 
@@ -149,4 +153,9 @@ if __name__ == '__main__':
         for x in range(1, 4): testset.remove('x_' + str(x))
         check(testset, 'set()')
 
+        #test delete block
+        sto.rm_blk('x_3', 23)
+        testset = set(os.listdir(sto.mnt_path + 'x_3' + '/')) 
+        check(testset, 'set()')
+        
         
