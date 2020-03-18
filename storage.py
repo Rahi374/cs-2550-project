@@ -33,13 +33,23 @@ class Storage():
         self.rm_dir_readonly(path)
 
     def rm_tbl(self, tbl_name: str, cascade = True):
-        #TODO: implement cascade, create test cases
-        os.rmdir(self.mnt_path + tbl_name + '/')
+        if cascade:
+            shutil.rmtree(self.mnt_path + tbl_name + '/')
+        else:
+            os.rmdir(self.mnt_path + tbl_name + '/')
         
     def rm_dir_readonly(self, path: str):
+        '''
+        remove os's readonly flag on newly created directory
+        path: path to directory
+        '''
         os.chmod(path, 0o777)
 
     def rm_file_readonly(self, path: str):
+        '''
+        remove os's readonly flag on newly created file
+        path: path to file
+        '''
         os.chmod(path, 0o666)
 
     def read_blk(self, tbl_name: str, blk_id: int):
@@ -126,3 +136,17 @@ if __name__ == '__main__':
             sto.read_blk('x_3', 123)
         except Exception as e:
             check(e, 'block does not exist')
+
+        #test delete tables (not cascade)
+        sto.rm_tbl('x_0', cascade=False)
+        testset = set(os.listdir(sto.mnt_path)) 
+        for x in range(1, 5): testset.remove('x_' + str(x))
+        check(testset, 'set()')
+
+        #test delete tables (cascade)
+        sto.rm_tbl('x_4')
+        testset = set(os.listdir(sto.mnt_path)) 
+        for x in range(1, 4): testset.remove('x_' + str(x))
+        check(testset, 'set()')
+
+        
