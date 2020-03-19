@@ -1,4 +1,10 @@
 import sys
+'''
+modified Treenode and AVL_Tree
+
+Author: geeksforgeeks
+url: https://www.geeksforgeeks.org/avl-tree-set-1-insertion/
+'''
 
 # Treenode class for AVL Tree
 class TreeNode(object): 
