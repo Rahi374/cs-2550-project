@@ -12,22 +12,21 @@ class ORG(Enum):
 
 class Block:
     '''
-    disk block used for storing SP SSTable nodes
-    call add method in either case
+    disk block used for storing SP/SSTable nodes
+    call add method to add write records 
     '''
-    def __init__(self, size = 32):
+    def __init__(self, size = 32, data: bytearray = None):
         '''
         size: # of bytes 
         '''
         self.size = size
-        self.data = [] 
-        
+        self.data = data
 
-    def add(self, data):
-        if len(self.data.encode('utf-8')) + len(data.encode('utf-8')) >= self.size:
+    def add(self, data: bytearray):
+        if len(self.data) + len(data) >= self.size:
             return -1
         else:
-            self.data.append(data)
+            self.data += data
             return 0
 
     def __getitem__(self, ind):
@@ -80,8 +79,8 @@ class Storage():
             f.close()
             return blk
             
-    def write_blk(self, tbl_name: str, blk_id: int, blk):
-
+    def write_blk(self, tbl_name: str, blk_id: int, blk: Block):
+        
         if not len(blk) == self.blk_size:
             raise Exception('invalid block size')
 

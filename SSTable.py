@@ -1,8 +1,3 @@
-
-
-
-
-
 import sys
 
 # Treenode class for AVL Tree
@@ -162,6 +157,7 @@ class SSTable:
         '''        
         sskey = SSKey((tbl_name, key))
         self.root = self.records.insert(self.root, sskey, record)
+        
 
     
     def getKeyRange(self):
