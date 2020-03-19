@@ -1,13 +1,9 @@
 '''
 storage.py  
 '''
-# from core import ORG
+from common import *
 from enum import Enum
 import os, shutil, stat, sys
-
-class ORG(Enum):
-    SEQ = 1
-    LSM = 2
 
 class Storage():
     file_org = None

@@ -1,3 +1,5 @@
+from common import *
+
 class Record():
     def __init__(self, id: int, client_name: str, phone: str):
         if not isinstance(id, int):
