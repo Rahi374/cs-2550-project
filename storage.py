@@ -9,6 +9,35 @@ class ORG(Enum):
     SEQ = 1
     LSM = 2
 
+
+class Block:
+    '''
+    disk block used for storing SP SSTable nodes
+    call add method in either case
+    '''
+    def __init__(self, size = 32):
+        '''
+        size: # of bytes 
+        '''
+        self.size = size
+        self.data = [] 
+        
+
+    def add(self, data):
+        if len(self.data.encode('utf-8')) + len(data.encode('utf-8')) >= self.size:
+            return -1
+        else:
+            self.data.append(data)
+            return 0
+
+    def __getitem__(self, ind):
+        return self.data[ind]
+
+    def __str__(self):
+        return str(self.data)
+
+            
+
 class Storage():
     file_org = None
     org_str = None
@@ -157,5 +186,8 @@ if __name__ == '__main__':
         sto.rm_blk('x_3', 23)
         testset = set(os.listdir(sto.mnt_path + 'x_3' + '/')) 
         check(testset, 'set()')
-        
-        
+
+
+
+
+

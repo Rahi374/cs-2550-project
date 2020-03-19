@@ -1,17 +1,9 @@
 
 
-class SSTable:
-    def __init__(self):
-        #use an AVL tree to keep key strings sorted
-        self.records = TreeNode()
-    
-    def add(self, tbl_name, key, record):
-        '''
-        add a write record
-        '''        
-        sskey = SSKey((tbl_name, key)))
-        self.records.insert(sskey, record)
 
+
+
+import sys
 
 class SSKey:
     def __init__(self, key: tuple):
@@ -22,7 +14,12 @@ class SSKey:
             return self.key[1] < other[1]
         else:
             return self.key[0] < other[0]
-
+    
+    def __getitem__(self, ind):
+        return self.key[ind]
+        
+    def __str__(self):
+        return str(self.key)
 
 
 '''
@@ -32,6 +29,7 @@ URL: https://www.geeksforgeeks.org/avl-tree-set-1-insertion/
 
 # Python code to insert a node in AVL tree 
 # Generic tree node class 
+
 class TreeNode(object): 
     def __init__(self, val = None, data = None): 
         self.val = val 
@@ -39,7 +37,7 @@ class TreeNode(object):
         self.left = None
         self.right = None
         self.height = 1
-  
+
 # AVL tree class which supports the  
 # Insert operation 
 class AVL_Tree(object): 
@@ -53,9 +51,9 @@ class AVL_Tree(object):
         if not root: 
             return TreeNode(key, value) 
         elif key < root.val: 
-            root.left = self.insert(root.left, key) 
+            root.left = self.insert(root.left, key, value) 
         else: 
-            root.right = self.insert(root.right, key) 
+            root.right = self.insert(root.right, key, value) 
   
         # Step 2 - Update the height of the  
         # ancestor node 
@@ -144,4 +142,43 @@ class AVL_Tree(object):
         self.preOrder(root.left) 
         self.preOrder(root.right) 
 
+    def inOrder(self, root):
+        if not root:
+            return 
+
+        self.inOrder(root.left)
+        print("{0} ".format(root.val), end="") 
+        self.inOrder(root.right)
+
     
+
+
+class SSTable:
+    def __init__(self):
+        #use an AVL tree to keep key strings sorted
+        self.records = AVL_Tree()
+        self.root = None
+    
+    def add(self, tbl_name, key, record):
+        '''
+        add a write record
+        '''        
+        sskey = SSKey((tbl_name, key))
+        self.root = self.records.insert(self.root, sskey, record)
+
+
+
+if __name__ == '__main__':
+    
+    if len(sys.argv) == 2 and sys.argv[1] == 'test':
+        sstable = SSTable()
+        sstable.add('abc', 12, 0000000)
+        sstable.add('abc', 13, 0000000)
+        sstable.add('aaa', 13, 0000000)
+        sstable.add('adc', 11, 0000000)
+        sstable.add('aaa', 1, 0000000)
+        sstable.records.inOrder(sstable.root)
+        print()
+
+  
+
