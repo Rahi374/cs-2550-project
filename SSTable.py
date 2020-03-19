@@ -5,31 +5,7 @@
 
 import sys
 
-class SSKey:
-    def __init__(self, key: tuple):
-        self.key = key
-    
-    def __lt__(self, other):
-        if self.key[0] == other[0]:
-            return self.key[1] < other[1]
-        else:
-            return self.key[0] < other[0]
-    
-    def __getitem__(self, ind):
-        return self.key[ind]
-        
-    def __str__(self):
-        return str(self.key)
-
-
-'''
-Author: GeeksforGeeks
-URL: https://www.geeksforgeeks.org/avl-tree-set-1-insertion/
-'''
-
-# Python code to insert a node in AVL tree 
-# Generic tree node class 
-
+# Treenode class for AVL Tree
 class TreeNode(object): 
     def __init__(self, val = None, data = None): 
         self.val = val 
@@ -38,13 +14,13 @@ class TreeNode(object):
         self.right = None
         self.height = 1
 
-# AVL tree class which supports the  
-# Insert operation 
+
 class AVL_Tree(object): 
   
     # Recursive function to insert a key-value pair in  
     # subtree rooted with node and returns 
     # new root of subtree. 
+
     def insert(self, root, key, value): 
       
         # Step 1 - Perform normal BST 
@@ -133,31 +109,52 @@ class AVL_Tree(object):
   
         return self.getHeight(root.left) - self.getHeight(root.right) 
   
-    def preOrder(self, root): 
-  
+    def getInOrder(self, root):
+        '''
+        return the in-order string
+        used for printing and getting min an max key value
+        '''
         if not root: 
-            return
-  
-        print("{0} ".format(root.val), end="") 
-        self.preOrder(root.left) 
-        self.preOrder(root.right) 
+            return []
 
-    def inOrder(self, root):
-        if not root:
-            return 
+        sortedKeys = []
+        l = self.getInOrder(root.left) 
+        r = self.getInOrder(root.right)
 
-        self.inOrder(root.left)
-        print("{0} ".format(root.val), end="") 
-        self.inOrder(root.right)
+        if l: sortedKeys += l
+        sortedKeys += [root.val]
+        if r: sortedKeys += r
+        
+        return sortedKeys
 
+
+class SSKey:
+    def __init__(self, key: tuple):
+        self.key = key
     
+    def __lt__(self, other):
+        if self.key[0] == other[0]:
+            return self.key[1] < other[1]
+        else:
+            return self.key[0] < other[0]
+    
+    def __getitem__(self, ind):
+        return self.key[ind]
+        
+    def __str__(self):
+        return str(self.key)
 
 
 class SSTable:
+    
     def __init__(self):
         #use an AVL tree to keep key strings sorted
         self.records = AVL_Tree()
         self.root = None
+        
+        #key range used for merging
+        self.lo = None
+        self.hi = None
     
     def add(self, tbl_name, key, record):
         '''
@@ -165,6 +162,19 @@ class SSTable:
         '''        
         sskey = SSKey((tbl_name, key))
         self.root = self.records.insert(self.root, sskey, record)
+
+    
+    def getKeyRange(self):
+        '''
+        used for SSTable merging
+        O(n) runtime
+        '''
+        sortedKeys = self.records.getInOrder(self.root)
+        return (sortedKeys[0], sortedKeys[-1])
+
+class SSTable_Merger:
+    pass
+    
 
 
 
@@ -177,8 +187,8 @@ if __name__ == '__main__':
         sstable.add('aaa', 13, 0000000)
         sstable.add('adc', 11, 0000000)
         sstable.add('aaa', 1, 0000000)
-        sstable.records.inOrder(sstable.root)
-        print()
+        for x in sstable.getKeyRange(): print(str(x))
+    
 
   
 
