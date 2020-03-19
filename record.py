@@ -8,6 +8,10 @@ class Record():
             raise TypeError("record client_name must be str")
         if not isinstance(phone, str):
             raise TypeError("record phone must be str")
+        if len(client_name) > 16:
+            raise Exception("client name is too long")
+        if len(phone) > 12:
+            raise Exception("phone is too long")
 
         self.id = id
         self.client_name = client_name
