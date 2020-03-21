@@ -1,7 +1,7 @@
 '''
 storage.py  
 '''
-# from core import ORG
+from common import *
 from enum import Enum
 import os, shutil, stat, sys
 

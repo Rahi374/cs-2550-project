@@ -1,8 +1,6 @@
 # main.py
+from common import *
 import sys
-import 
-
-import ACTION
 
 def print_usage():
     print("python3 main.py <instruction_file> <disk_org> <mem_size> <block_size>")
