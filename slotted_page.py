@@ -5,15 +5,11 @@ import numpy as np
 from record import Record
 
 class SlottedPage():
-    num_records = 0
-    max_num_records = inf
-    addr_bit_width = 0
-    block_size = 0
-    num_bytes_for_pointers = 0
 
-    records = []
+    def __init__(self, block_size: int, block: bytearray = None):
+        if block == None:
+            block = bytearray(block_size)
 
-    def __init__(self, block: bytearray, block_size: int):
         if not isinstance(block_size, int):
             raise TypeError("block_size must be integer")
         if not isinstance(block, bytearray):
@@ -30,6 +26,7 @@ class SlottedPage():
         self.max_num_records -= num_records_to_remove
 
         self.records = [None] * self.max_num_records
+        self.num_records = 0
 
         ba = BitArray(block)
         for i in range(0, self.max_num_records):
@@ -85,4 +82,5 @@ class SlottedPage():
 
         return ba + pad_bits(pointers, self.num_bytes_for_pointers).bytes
 
-
+    def has_space(self):
+        return self.num_records < self.max_num_records 

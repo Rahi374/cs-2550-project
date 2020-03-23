@@ -10,7 +10,7 @@ class TestSlottedPage(unittest.TestCase):
         r1 = Record(0, cname1, phone1)
  
         blk = bytearray(64)
-        sp = SlottedPage(blk, 64)
+        sp = SlottedPage(64, blk)
 
         self.assertEqual(len(sp), 0)
         self.assertEqual(sp.max_records(), 1)
@@ -33,7 +33,7 @@ class TestSlottedPage(unittest.TestCase):
         r2 = Record(1, cname2, phone2)
  
         blk = bytearray(66)
-        sp = SlottedPage(blk, 66)
+        sp = SlottedPage(66, blk)
 
         self.assertEqual(len(sp), 0)
         self.assertEqual(sp.max_records(), 2)
