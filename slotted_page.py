@@ -65,6 +65,23 @@ class SlottedPage():
     def __len__(self):
         return self.num_records
 
+    def insert(self, record):
+        # insert to first available slot, if available
+        for i, rec in enumerate(self.records):
+            if self.records[i] == None:
+                self.records[i] = record
+                self.num_records += 1
+                return
+        raise Exception("no space to insert record")
+
+    def delete(self, record):
+        for i, rec in enumerate(self.records):
+            if rec is not None and rec.id == record.id:
+                self.records[i] = None
+                self.num_records -= 1
+                return
+        raise Exception("record to be removed must exist")
+
     def max_records(self):
         return self.max_num_records
 
