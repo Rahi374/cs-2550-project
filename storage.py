@@ -74,12 +74,12 @@ class Storage():
         elif not os.path.exists(f_path):
             raise Exception('block does not exist')
         else:
-            f = open(f_path, 'r')
-            blk = f.read()
+            f = open(f_path, 'rb')
+            blk = bytearray(f.read())
             f.close()
             return blk
             
-    def write_blk(self, tbl_name: str, blk_id: int, blk: Block):
+    def write_blk(self, tbl_name: str, blk_id: int, blk: bytearray):
         
         if not len(blk) == self.blk_size:
             raise Exception('invalid block size')
@@ -88,7 +88,7 @@ class Storage():
         if not os.path.exists(self.mnt_path + tbl_name):
             raise Exception('table does not exist')
         else:
-            f = open(f_path, 'w+')
+            f = open(f_path, 'wb')
             f.write(blk)
             f.close()
             return 0
