@@ -38,10 +38,6 @@ class Block:
             
 
 class Storage():
-    file_org = None
-    org_str = None
-    blk_size = None
-    mnt_path = None
 
     def __init__(self, org: ORG, blk_size: int, mnt: str = 'storage/'):
         #mount point 'storage/'

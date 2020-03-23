@@ -17,6 +17,11 @@ class Record():
         self.client_name = client_name
         self.phone = phone
 
+    def overwrite_values(self, rec):
+        self.id = rec.id
+        self.client_name = rec.client_name
+        self.phone = rec.phone
+
     def to_bytearray(self):
         id_ba = bytearray([(self.id >> shift) & 0xff for shift in [0, 8, 16, 24]])
         name_ba = pad_ba(bytearray(self.client_name, "ascii"), 16)

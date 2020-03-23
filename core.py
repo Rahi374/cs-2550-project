@@ -2,12 +2,10 @@ from common import *
 from enum import Enum
 
 class Core():
-    mem = None
-    disk = None
 
     def __init__(self, disk_org: ORG, mem_size: int, block_size: int):
-        disk = create_storage(block_size, disk_org)
-        mem = create_memory(disk, mem_size, block_size, disk_org)
+        self.disk = create_storage(block_size, disk_org)
+        self.mem = create_memory(disk, mem_size, block_size, disk_org)
 
     def create_storage(self, block_size: int, disk_org: ORG):
         if disk_org == ORG.SEQ:
