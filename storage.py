@@ -5,11 +5,6 @@ from common import *
 from enum import Enum
 import os, shutil, stat, sys
 
-class ORG(Enum):
-    SEQ = 1
-    LSM = 2
-
-
 class Block:
     '''
     disk block used for storing SP/SSTable nodes
