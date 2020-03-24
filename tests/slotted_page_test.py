@@ -3,14 +3,16 @@ import unittest
 from record import Record
 from slotted_page import SlottedPage
 
+cname1 = "bob"
+cname2 = "alice"
+phone1 = "1234567890"
+phone2 = "4352769867"
+
 class TestSlottedPage(unittest.TestCase):
     def test_regular(self):
-        cname1 = "bob"
-        phone1 = "1234567890"
         r1 = Record(0, cname1, phone1)
  
-        blk = bytearray(64)
-        sp = SlottedPage(64, blk)
+        sp = SlottedPage(64)
 
         self.assertEqual(len(sp), 0)
         self.assertEqual(sp.max_records(), 1)
@@ -25,15 +27,10 @@ class TestSlottedPage(unittest.TestCase):
         self.assertEqual(len(ba), 64)
 
     def test_no_waste(self):
-        cname1 = "bob"
-        cname2 = "alice"
-        phone1 = "1234567890"
-        phone2 = "4352769867"
         r1 = Record(0, cname1, phone1)
         r2 = Record(1, cname2, phone2)
  
-        blk = bytearray(66)
-        sp = SlottedPage(66, blk)
+        sp = SlottedPage(66)
 
         self.assertEqual(len(sp), 0)
         self.assertEqual(sp.max_records(), 2)
