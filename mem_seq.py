@@ -20,7 +20,7 @@ from datetime import datetime
 from slotted_page_cache import *
 
 class Mem():
-    def __init__(mem_size, block_size, storage, storage_type):
+    def __init__(self, mem_size, block_size, storage, storage_type):
         self.storage = storage
         self.storage_type = storage_type
         self.block_size = block_size
