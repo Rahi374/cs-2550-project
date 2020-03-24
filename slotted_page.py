@@ -40,7 +40,7 @@ class SlottedPage():
             phone = block[off+20:off+32].decode("ascii")
             if id == 0 and name[0] == "\0" and phone[0] == "\0":
                 continue
-            self.records[i] = Record(id, name, phone)
+            self.records[i] = Record(id, name.strip('\0'), phone.strip('\0'))
             self.num_records += 1
 
 
