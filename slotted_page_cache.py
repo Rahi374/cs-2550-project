@@ -6,7 +6,7 @@ from record import *
 
 class SlottedPageCache():
 
-    def __init__(cache_size: int, block_size: int, storage: Storage):
+    def __init__(self, cache_size: int, block_size: int, storage: Storage):
         self.CACHE_SIZE = cache_size
         self.MAX_NUM_BLOCKS = cache_size / block_size
     
