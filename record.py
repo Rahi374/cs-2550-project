@@ -33,3 +33,9 @@ class Record():
 
     def __str__(self):
         return f"id: {self.id}, client_name: {self.client_name}, phone: {self.phone}"
+
+    def __eq__(self, other):
+        return other is not None and \
+               self.id == other.id and \
+               self.client_name == other.client_name and \
+               self.phone == other.phone
