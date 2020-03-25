@@ -13,31 +13,33 @@
 # non_key_index (dict: area_code -> list[block_id])
 
 from storage import Storage
+from SSTable import SSTable as SST
 from core import ORG
 import heapq as pq
 
-class Mem():
-    storage = None
-    storage_type = None
-    page_table = None
-    hash_table = None 
 
+class MemLSM():
 
-
-    def __init__(my_storage: Storage, my_storage_type: ORG):
-        this.storage = my_storage
-        this.storage_type = my_storage_type
-        this.page_table = []
-        hash_table = collections.defaultdict(int)
+    def __init__(my_storage: Storage, my_storage_type: ORG, num_of_memtbls):
+        self.storage = my_storagee
+        self.page_table = []
+        self.page_table_ind = {}
+        self.meta = {}
+        self.num_of_memtbls = num_of_memtbls
 
     def retrieve_rec(self, table: str, rec_id: int, field: str, is_primary: bool):
-        if storage_type == ORG.SEQ:
+        
 
+    def write_rec(self, tbl_name: str, rec: tuple):
+        if not tbl_name in self.meta:
+            sst = SST()
+            self.meta[tbl_name] = [sst]
         else:
+            sst = self.meta[tbl_name][-1]
+            
+            
 
-    def write_rec(self, table: str, rec: tuple):
-
-    def update_rec(self, table: str, rec: tuple):
+    def update_rec(self, tbl_name: str, rec: tuple):
 
     def key_index(self, key: int) -> int:
     """

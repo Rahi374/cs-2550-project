@@ -114,7 +114,9 @@ class AVL_Tree(object):
     def getInOrder(self, root, searchArea = False, area = ''):
         '''
         return the in-order string
-        used for printing and getting min an max key value
+        used for printing and getting min an max key value,
+
+        searchArea: True, returns the list of records matched by area code
         '''
         if not root: 
             return []
@@ -171,12 +173,13 @@ class AVL_Tree(object):
 
 class SSTable:
     
-    def __init__(self):
+    def __init__(self, num_of_rec_allowed = 10):
         #use an AVL tree to keep key strings sorted
         self.records = AVL_Tree()
         self.root = None
         self.num_of_rec = 0
-        
+        self.num_of_rec_allowed = num_of_rec_allowed
+
         #key range used for merging
         self.lo = None
         self.hi = None
@@ -195,8 +198,6 @@ class SSTable:
             self.num_of_rec += 1
             return 0
         return -1
-    
-        
         
     def search_rec(self, key):
         '''
@@ -222,6 +223,12 @@ class SSTable:
         '''
         sortedKeys = self.records.getInOrder(self.root)
         return (sortedKeys[0], sortedKeys[-1])
+
+    def isFull(self):
+        '''
+        return True if SSTable is full
+        '''
+        return self.num_of_rec == self.num_of_rec_allowed
 
 
 if __name__ == '__main__':
