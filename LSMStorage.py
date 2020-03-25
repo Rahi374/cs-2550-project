@@ -2,6 +2,8 @@ import os
 import shutil
 import threading
 import time
+import math
+import record
 from SSTable import *
 
 class LSMStorage():
@@ -40,7 +42,7 @@ class LSMStorage():
 
 
     def get_record(self, record_id, table_name):
-        table_exists = check_if_table_exists(table_name)
+        table_exists = self.check_if_table_exists(table_name)
         if not table_exists:
             return -1
         else:
@@ -59,40 +61,40 @@ class LSMStorage():
         return
 
     def build_memtable(self, table_name):
-        table_exists = check_if_table_exists(table_name)
-        if not table_not_exists:
-            metadata_counts[table_name+"L0"] = 0
-            metadata_counts[table_name+"L1"] = 0
-            metadata_counts[table_name+"L2"] = 0
-            L0_lock_hm[table_name] = threading.Lock()
-            L1_lock_hm[table_name] = threading.Lock()
-            L2_lock_hm[table_name] = threading.Lock()
-            create_table_structure(table_name)
-        return MemTable(self.block_size, self.blocks_per_ss ,table_name)
+        table_exists = self.check_if_table_exists(table_name)
+        if not table_exists:
+            self.metadata_counts[table_name+"L0"] = 0
+            self.metadata_counts[table_name+"L1"] = 0
+            self.metadata_counts[table_name+"L2"] = 0
+            self.L0_lock_hm[table_name] = threading.Lock()
+            self.L1_lock_hm[table_name] = threading.Lock()
+            self.L2_lock_hm[table_name] = threading.Lock()
+            self.create_table_structure(table_name)
+        return MemTable(self.blk_size, self.blocks_per_ss ,table_name)
 
     def push_memtable(self, memtable):
         table_name = memtable.tbl_name
-        L0_lock_hm[table_name].acquire()
+        self.L0_lock_hm[table_name].acquire()
         all_records = memtable.get_in_order_records()
         lower, upper = all_records[0], all_records[-1]
-        write_records_to_level_SST(all_records, memtable.tbl_name, lower, upper, "L0")
-        metadata_counts[table_name+"L0"] = metadata_counts[table_name+"L0"] + 1 
-        L0_lock_hm[table_name].release()
-        if metadata_counts[table_name+"L0"] == 4: #compact L0 if no more room
-            if metadata_counts[table_name+"L1"] > 6:#if L1 would not be able to take L0, compact it
-                L1_lock = L1_lock_hm[table_name]
-                L2_lock = L2_lock_hm[table_name]
+        self.write_records_to_level_SST(all_records, memtable.tbl_name, lower, upper, "L0")
+        self.metadata_counts[table_name+"L0"] = metadata_counts[table_name+"L0"] + 1 
+        self.L0_lock_hm[table_name].release()
+        if self.metadata_counts[table_name+"L0"] == 4: #compact L0 if no more room
+            if self.metadata_counts[table_name+"L1"] > 6:#if L1 would not be able to take L0, compact it
+                L1_lock = self.L1_lock_hm[table_name]
+                L2_lock = self.L2_lock_hm[table_name]
                 L1_lock.acquire()
                 L2_lock.acquire()
-                compact_L1(table_name)
+                self.compact_L1(table_name)
                 L2_lock.release()
                 L1_lock.release()
 
-            L0_lock = L0_lock_hm[table_name]
-            L1_lock = L1_lock_hm[table_name]
+            L0_lock = self.L0_lock_hm[table_name]
+            L1_lock = self.L1_lock_hm[table_name]
             L0_lock.acquire()
             L1_lock.acquire()
-            compact_L0(table_name)
+            self.compact_L0(table_name)
             L1_lock.release()
             L0_lock.release()
 
@@ -117,10 +119,10 @@ class LSMStorage():
         return os.path.isdir('storage/'+table_name)
 
     def create_table_structure(self, table_name):
-        os.makedir('storage/'+table_name)
-        os.makedir('storage/'+table_name+'/L0')
-        os.makedir('storage/'+table_name+'/L1')
-        os.makedir('storage/'+table_name+'/L2') 
+        os.mkdir('storage/'+table_name)
+        os.mkdir('storage/'+table_name+'/L0')
+        os.mkdir('storage/'+table_name+'/L1')
+        os.mkdir('storage/'+table_name+'/L2') 
         return
 
     def get_byte_array_of_records(self, records):
@@ -365,7 +367,10 @@ class MemTable(object):
         self.blk_size = block_size
         self.tbl_name = table_name
         self.blocks_per_ss = blocks_per_SS
-        self.max_records = self.blocks_per_ss * floor(blk_size / get_size_of_records())
+        self.max_records = self.blocks_per_ss * math.floor(self.blk_size / get_size_of_records())
+        print("mem table block size: "+str(block_size))
+        print("mem table blocks per ss: "+str(blocks_per_SS))
+        print("mem table max number of records: "+str(self.max_records))
 
 
     def get_range():
