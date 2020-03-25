@@ -123,3 +123,19 @@ class SlottedPageCache():
 
         return None
 
+    def delete_table(self, table_name: str):
+        keys = list(self.cache_dic.keys())
+
+        for key in keys:
+            if key[0] == table_name:
+                print(f"deleting {key}")
+                del self.cache_dic[key]
+
+    def flush_cache(self):
+        keys = self.cache_dic.keys()
+
+        for key in keys:
+            self.storage.write_blk(key[0], key[1], self.cache_dic[key]['slotted_page'].to_bytearray())
+
+    def print_cache(self):
+        pp.pprint(self.cache_dic)
