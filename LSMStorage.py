@@ -15,6 +15,7 @@ class LSMStorage():
     L1_lock_hm = {}
     L2_lock_hm = {}
     compaction_thread_hm = {}
+    thread_should_run = {}
     
 
     def __init__(self, block_size, blocks_per_SS):
@@ -59,10 +60,13 @@ class LSMStorage():
             return rec, ss
 
     def get_records(self, area_code, table_name, hm_keys_found):
-        list_of_bytearrays = []
-        get_matching_area_code_byte_arrays(list_of_bytearrays, table_name, area_code, "L0")
-        get_matching_area_code_byte_arrays(list_of_bytearrays, table_name, area_code, "L1")
-        get_matching_area_code_byte_arrays(list_of_bytearrays, table_name, area_code, "L2")
+        l0_list = []
+        l1_list = []
+        l2_list = []
+        get_matching_area_code_byte_arrays(l0_list, table_name, area_code, "L0")
+        get_matching_area_code_byte_arrays(l1_list, table_name, area_code, "L1")
+        get_matching_area_code_byte_arrays(l2_list, table_name, area_code, "L2")
+        list_of_bytearrays_lists = [l0_list, l1_list, l2_list]
         return list_of_bytearrays
 
     def get_matching_area_code_byte_arrays(self, list_of_bytearrays, table_name, area_code, level):
@@ -82,7 +86,7 @@ class LSMStorage():
                 start_of_rec = i * get_size_of_records()
                 rec_phone_num = b_arr[start_of_rec+20:start_of_rec+32].decode()
                 rec_area_code = phone_num.split("-")[0]
-                if rec_area_code = area_code:
+                if rec_area_code == area_code:
                     f.close()
                     return True
             f.close()
@@ -97,12 +101,11 @@ class LSMStorage():
             self.L1_lock_hm[table_name] = threading.Lock()
             self.L2_lock_hm[table_name] = threading.Lock()
             self.create_table_structure(table_name)
+            self.thread_should_run[table_name] = True
             self.start_compaction_threads(table_name) #TODO re-enable this
         return MemTable(self.blk_size, self.blocks_per_ss ,table_name)
 
     def push_memtable(self, memtable):
-        print("in order records being pushed from memtable")
-        print(memtable.get_in_order_records())
         table_name = memtable.tbl_name
         self.L0_lock_hm[table_name].acquire()
         all_records = memtable.get_in_order_records()
@@ -132,12 +135,9 @@ class LSMStorage():
 
     def delete_table(self, table_name):
         try:
+            self.thread_should_run[table_name] = False
             shutil.rmtree('storage/'+table_name)
             os.rmdir('storage/'+table_name)
-            l0_thread = compaction_thread_hm["L0"+table_name]
-            l0_thread._stop()
-            l1_thread = compaction_thread_hm["L1"+table_name]
-            l1_thread._stop()
         except Exception as e:
             print(e)
             print("exception in deletion of table")
@@ -176,8 +176,6 @@ class LSMStorage():
         while records_to_write > 0:
             if records_to_write < records_per_block:
                 recs_to_write = records[i:i+records_to_write]
-                print("writing records partial:")
-                print(recs_to_write)
                 f = open(dir_path+"/"+str(c)+"_"+str(records_to_write), "wb+")
                 f.write(self.get_byte_array_of_records(recs_to_write))
                 f.close()
@@ -202,8 +200,6 @@ class LSMStorage():
         rec, ss = None, -1
         for s in ss_tables:
             lower, upper = self.metadata_ranges[dir_path+"/"+s]
-            print("lower: "+str(lower))
-            print("upper: "+str(upper))
             if lower <= record_id and upper >= record_id:
                 rec, ss = self.check_sst_for_record(record_id, table_name, level, s)
                 if ss != -1:
@@ -259,14 +255,13 @@ class LSMStorage():
     def remove_duplicates_from_block(self, b, rec_hm, table_name, sst,level):
         num_recs = int(b.split("_")[1])
         dir_path = "storage/"+table_name+level+sst+"/"+b
-        #time.sleep(20)
         f = open(dir_path, "rb")
         b_arr = bytearray(f.read())
         for r in range(num_recs):
             start_of_rec = r * get_size_of_records() 
             rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
-            if rec_id in rec_hm:
-                b_arr = b_arr[0:start_of_rec] + Record(-2,"-1","-1").to_bytearray() + b_arr[start_of_rec+32:]
+            if rec_id in rec_hm or -1*rec_id in hm:
+                b_arr = b_arr[0:start_of_rec] + Record(-1*rec_id,"1","1").to_bytearray() + b_arr[start_of_rec+32:]
         f.close()
         f = open(dir_path, "wb+")
         f.write(b_arr)
@@ -285,6 +280,9 @@ class LSMStorage():
         L0_lock = self.L0_lock_hm[table_name]
         L1_lock = self.L1_lock_hm[table_name]
         while True:
+            should_still_run = self.thread_should_run[table_name]
+            if not should_still_run:
+                break
             L0_lock.acquire()
             L1_lock.acquire()
             self.compact_L0(table_name)
@@ -422,16 +420,13 @@ class MemTable(object):
         self.tbl_name = table_name
         self.blocks_per_ss = blocks_per_SS
         self.max_records = self.blocks_per_ss * math.floor(self.blk_size / get_size_of_records())
-        print("mem table block size: "+str(block_size))
-        print("mem table blocks per ss: "+str(blocks_per_SS))
-        print("mem table max number of records: "+str(self.max_records))
 
     def add_record(self, record):
         self.ss_table.add(record)
 
     def delete_record(self, record_id):
         #make new record and set the name to -1 to indicate it is a delete node
-        deleted_record = Record(record_id,"-1","-1")
+        deleted_record = Record(-1*record_id,"-1","-1")
         self.ss_table.add(deleted_record)
         return
 
@@ -439,7 +434,6 @@ class MemTable(object):
         return self.ss_table.getInOrder()
 
     def is_full(self):
-        print(self.ss_table.get_num_records)
         return self.ss_table.get_num_records() == self.max_records
 
 
