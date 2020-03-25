@@ -36,8 +36,6 @@ class LSMStorage():
 
         os.chmod('storage', 0o777)
 
-        init_locks()
-        start_compaction_threads()
 
         return
 
@@ -128,14 +126,14 @@ class LSMStorage():
 
     def get_byte_array_of_records(self, records):
         byte_arr = bytearray(0)
-        for r in records
+        for r in records:
             byte_arr += r.to_bytearray()
         return byte_arr
 
     def write_records_to_level_SST(self, records, table_name, lower, upper, level):
         remove_duplicate_level_entries(records, table_name, level)
         records_per_block = blk_size / get_size_of_records()
-        dir_path = "storage/"+table_name+"/"+level"/SST"+metadata_counts[table_name+level]
+        dir_path = "storage/"+table_name+"/"+level+"/SST"+metadata_counts[table_name+level]
         metadata_ranges[dir_path] = (lower, upper)
         os.mkdir(dir_path)
         records_to_write = len(records)
@@ -185,7 +183,7 @@ class LSMStorage():
                     rec_id = int(b_arr[start_of_rec:start_of_rec+4])
                     rec_name = str(b_arr[start_of_rec+4:start_of_rec+20])
                     rec_phone = str(b_arr[start_of_rec+20:start_of_rec+32])
-                    return Record(rec_id, rec_name, rec_phone)), b_arr
+                    return Record(rec_id, rec_name, rec_phone), b_arr
 
             f.close()
         return None, -1
@@ -195,10 +193,10 @@ class LSMStorage():
         rec_hm = {}
         for r in records:
             rec_hm[r.id] = r
-        dir_path = "storage/"+table_name+"/"+level"/"
+        dir_path = "storage/"+table_name+"/"+level+"/"
         ss_tables_in_L0 = os.listdir(dir_path)
         for sst in ss_tables_in_L0:
-            remove_duplicates_from_ss_table(sst, rec_hm, "/"+level"/")
+            remove_duplicates_from_ss_table(sst, rec_hm, "/"+level+"/")
 
     def remove_duplicates_from_ss_table(sst, rec_hm, level):
         dir_path = "storage/"+table_name+level+sst
@@ -388,7 +386,7 @@ class MemTable(object):
         return
 
     def get_in_order_records(self):
-        return ss_table.get_in_order_records()
+        return ss_table.getInOrderRecords()
 
     def is_full():
         return num_records == max_records
