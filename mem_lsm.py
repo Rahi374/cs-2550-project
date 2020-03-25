@@ -71,6 +71,17 @@ class MemLSM():
     
         memtbl.add_record(rec)
     
+    def _level_read_rec(self, level: list, rec_id):
+        for i in range(len(level)):
+            pass
+
+    def _ba_2_recs(self, ba):
+        res = []
+        for i in range(8):
+            rec = Record(ba = ba[i * 32: (i + 1) * 32])
+        res.append(rec)
+        return res
+
         
     def read_rec(self, tbl_name: str, rec_id):
         '''
@@ -86,9 +97,16 @@ class MemLSM():
             if res:
                 return res
         
-        #search in pagetable
-        
+        #search in LRU
+
+        # #create LRU if necessary 
+        # if tbl_name not in self.page_table:
+        #     self.page_table[tbl_name] = [[], [], []] #L0, L1, L2
+        # LRU = self.page_table[tbl_name]
+
         #search in storage
+        rec = self.storage.get_record(rec_id, tbl_name)
+
 
         return -1
 
@@ -147,9 +165,29 @@ if __name__ == '__main__':
         ss = mem.memtbls['tbl2'].ss_table
         print('client: ', ss)
 
-        mem.write_rec('tbl1', Record(123, 'test', '123-222-3142'))
-        mem.write_rec('tbl1', Record(101, 'test', '401-222-3142'))
-        mem.write_rec('tbl3', Record(123, 'test', '999-222-3142'))
+
+        #test read rec 
+        mem.write_rec('tbl3', Record(123, 'test', '123-222-3142'))
+        mem.write_rec('tbl3', Record(111, 'test', '401-222-3142'))
+        mem.write_rec('tbl3', Record(333, 'test', '401-222-3142'))
+        mem.write_rec('tbl3', Record(13, 'eeee', '411-222-3142'))
+        mem.write_rec('tbl3', Record(1, 'test', '123-222-3142'))
+        mem.write_rec('tbl3', Record(2, 'test', '401-222-1111'))
+        mem.write_rec('tbl3', Record(3, 'test', '999-222-3142'))
+        mem.write_rec('tbl3', Record(3, 'test2', '999-111-3142'))
+        mem.write_rec('tbl3', Record(122, 'test', '999-111-0000'))
+
+        mem.write_rec('tbl3', Record(10, 'test', '999-111-4444'))
+        mem.write_rec('tbl3', Record(11, 'test', '123-222-3142'))
+        mem.write_rec('tbl3', Record(12, 'test', '401-222-3142'))
+        mem.write_rec('tbl3', Record(13, 'test', '401-222-3142'))
+        mem.write_rec('tbl3', Record(4, 'eeee', '411-222-3142'))
+        mem.write_rec('tbl3', Record(5, 'test', '123-222-3142'))
+        mem.write_rec('tbl3', Record(13, 'test', '401-222-1111'))
+        mem.write_rec('tbl3', Record(6, 'test', '999-222-3142'))
+        
+        print(mem.read_rec('tbl3', 3))
+        
 
 
 
