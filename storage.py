@@ -5,33 +5,6 @@ from common import *
 from enum import Enum
 import os, shutil, stat, sys
 
-class Block:
-    '''
-    disk block used for storing SP/SSTable nodes
-    call add method to add write records 
-    '''
-    def __init__(self, size = 32, data: bytearray = None):
-        '''
-        size: # of bytes 
-        '''
-        self.size = size
-        self.data = data
-
-    def add(self, data: bytearray):
-        if len(self.data) + len(data) >= self.size:
-            return -1
-        else:
-            self.data += data
-            return 0
-
-    def __getitem__(self, ind):
-        return self.data[ind]
-
-    def __str__(self):
-        return str(self.data)
-
-            
-
 class Storage():
 
     def __init__(self, org: ORG, blk_size: int, mnt: str = 'storage/'):
