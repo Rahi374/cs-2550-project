@@ -173,7 +173,7 @@ class AVL_Tree(object):
 
 class SSTable:
     
-    def __init__(self, num_of_rec_allowed = 10):
+    def __init__(self, num_of_rec_allowed = 10, IMMUNTABLE = False, data:bytearray = None):
         #use an AVL tree to keep key strings sorted
         self.records = AVL_Tree()
         self.root = None
@@ -183,7 +183,12 @@ class SSTable:
         #key range used for merging
         self.lo = None
         self.hi = None
-    
+
+        #whether it has stored on disk
+        self.IMMUNTABLE = IMMUNTABLE
+        if self.IMMUNTABLE:
+            self.records = bytearray
+
     def add(self, rec: Record):
         '''
         add a write record
@@ -192,6 +197,7 @@ class SSTable:
         node = self.records.searchNode(self.root, key)
         if node:
             node.data = rec
+            # print('overwrite',node)
             return 1
         else:
             self.root = self.records.insert(self.root, key, rec)
@@ -205,7 +211,10 @@ class SSTable:
         returns the record within that node
         '''
         node = self.records.searchNode(self.root, key)
-        return node.data
+       
+        if node: 
+            return node.data
+        return node
 
     def search_recs(self, area):
         '''
@@ -237,19 +246,22 @@ if __name__ == '__main__':
         sstable = SSTable()
 
         sstable.add(Record(123, 'test', '401-222-3142'))
-        sstable.add(Record(122, 'test', '401-222-3142'))
+        sstable.add(Record(122, 'test', '401-222-0000'))
         sstable.add(Record(10, 'test', '412-222-3142'))
         print(sstable.num_of_rec)
 
         sstable.add(Record(13, 'test', '412-222-3142'))
         print(sstable.num_of_rec)
 
-        sstable.add(Record(122, 'test', '333-222-3142'))
+        sstable.add(Record(122, 'test', '333-222-9999'))
         print(sstable.num_of_rec)
 
-        sstable.add(Record(100, 'test', '333-222-3142'))
+        sstable.add(Record(100, 'test', '333-222-3143'))
         
         print(sstable.records.getInOrder(sstable.root))
+
+        print(sstable.search_rec(100))
+        print(sstable.search_rec(122))
 
         print(sstable.search_recs('333'))
         print(sstable.search_recs('412'))
