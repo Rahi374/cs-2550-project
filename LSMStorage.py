@@ -3,7 +3,7 @@ import shutil
 import threading
 import time
 import math
-import record
+from record import *
 from SSTable import *
 
 class LSMStorage():
@@ -377,13 +377,13 @@ class MemTable(object):
         return lower_bound, upper_bound
 
     def add_record(self, record):
-        self.ss_table.insert(record.id, record)
+        self.ss_table.add(record.id, record)
 
 
     def delete_record(self, record_id):
         #make new record and set the name to -1 to indicate it is a delete node
         deleted_record = Record(record_id,"-1","-1")
-        self.ss_table.insert(record_id, deleted_record)
+        self.ss_table.add(record_id, deleted_record)
         self.num_records = len(AVL_Tree.getInOrder())
         return
 
