@@ -4,6 +4,9 @@ class Record():
     # id: int, client_name: str, phone: str, ba: bytearray
     def __init__(self, id=None, client_name=None, phone=None, ba=None):
         if isinstance(ba, bytearray):
+            if len(ba) != RECORD_SIZE:
+                raise Exception("invalid bytearray length")
+
             self.id = ba[0] + (ba[1] << 8) + (ba[2] << 16) + (ba[3] << 24)
             self.client_name = ba[4:20].decode("ascii")
             self.phone = ba[20:32].decode("ascii")
