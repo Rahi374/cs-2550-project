@@ -3,7 +3,7 @@ import unittest
 from LSMStorage import *
 
 class TestLSM(unittest.TestCase):
-    def test_bytearray_conversion(self):
+    def test_lsm(self):
         lsm = LSMStorage(72, 4)
         mem_table = lsm.build_memtable("table1")
         rec1 = Record(1, "name1", "412-760-0285")
