@@ -2,6 +2,8 @@ import os
 import shutil
 import threading
 import time
+import math
+from record import *
 from SSTable import *
 
 class LSMStorage():
@@ -19,10 +21,16 @@ class LSMStorage():
         self.blk_size = block_size
         self.blocks_per_ss = blocks_per_SS
         #delete old directory if exists
+<<<<<<< HEAD
         if os.path.isdir('strorage'):
             try:
                 shutil.rmtree('storage')
                 os.rmdir('storage')
+=======
+        if os.path.isdir('storage'):
+            try:
+                shutil.rmtree('storage/')
+>>>>>>> 1af2a63676fe1d902731faa733b70932076a2598
             except Exception as e:
                 print(e)
                 print("exception in deletion of old storage")
@@ -41,7 +49,11 @@ class LSMStorage():
 
 
     def get_record(self, record_id, table_name):
+<<<<<<< HEAD
         table_exists = check_if_table_exists(table_name)
+=======
+        table_exists = self.check_if_table_exists(table_name)
+>>>>>>> 1af2a63676fe1d902731faa733b70932076a2598
         if not table_exists:
             return -1
         else:
@@ -59,6 +71,7 @@ class LSMStorage():
         #TODO
         return
 
+<<<<<<< HEAD
     def build_memtable(self, block_size, table_name):
         table_exists = check_if_table_exists(table_name)
         if not table_not_exists:
@@ -94,6 +107,43 @@ class LSMStorage():
             L0_lock.acquire()
             L1_lock.acquire()
             compact_L0(table_name)
+=======
+    def build_memtable(self, table_name):
+        table_exists = self.check_if_table_exists(table_name)
+        if not table_exists:
+            self.metadata_counts[table_name+"L0"] = 0
+            self.metadata_counts[table_name+"L1"] = 0
+            self.metadata_counts[table_name+"L2"] = 0
+            self.L0_lock_hm[table_name] = threading.Lock()
+            self.L1_lock_hm[table_name] = threading.Lock()
+            self.L2_lock_hm[table_name] = threading.Lock()
+            self.create_table_structure(table_name)
+        return MemTable(self.blk_size, self.blocks_per_ss ,table_name)
+
+    def push_memtable(self, memtable):
+        table_name = memtable.tbl_name
+        self.L0_lock_hm[table_name].acquire()
+        all_records = memtable.get_in_order_records()
+        lower, upper = all_records[0], all_records[-1]
+        self.write_records_to_level_SST(all_records, memtable.tbl_name, lower, upper, "L0")
+        self.metadata_counts[table_name+"L0"] = metadata_counts[table_name+"L0"] + 1 
+        self.L0_lock_hm[table_name].release()
+        if self.metadata_counts[table_name+"L0"] == 4: #compact L0 if no more room
+            if self.metadata_counts[table_name+"L1"] > 6:#if L1 would not be able to take L0, compact it
+                L1_lock = self.L1_lock_hm[table_name]
+                L2_lock = self.L2_lock_hm[table_name]
+                L1_lock.acquire()
+                L2_lock.acquire()
+                self.compact_L1(table_name)
+                L2_lock.release()
+                L1_lock.release()
+
+            L0_lock = self.L0_lock_hm[table_name]
+            L1_lock = self.L1_lock_hm[table_name]
+            L0_lock.acquire()
+            L1_lock.acquire()
+            self.compact_L0(table_name)
+>>>>>>> 1af2a63676fe1d902731faa733b70932076a2598
             L1_lock.release()
             L0_lock.release()
 
@@ -118,10 +168,17 @@ class LSMStorage():
         return os.path.isdir('storage/'+table_name)
 
     def create_table_structure(self, table_name):
+<<<<<<< HEAD
         os.makedir('storage/'+table_name)
         os.makedir('storage/'+table_name+'/L0')
         os.makedir('storage/'+table_name+'/L1')
         os.makedir('storage/'+table_name+'/L2') 
+=======
+        os.mkdir('storage/'+table_name)
+        os.mkdir('storage/'+table_name+'/L0')
+        os.mkdir('storage/'+table_name+'/L1')
+        os.mkdir('storage/'+table_name+'/L2') 
+>>>>>>> 1af2a63676fe1d902731faa733b70932076a2598
         return
 
     def get_byte_array_of_records(self, records):
@@ -360,28 +417,48 @@ class MemTable(object):
     upper_bound = None
     max_records = None
     num_records = 0
+<<<<<<< HEAD
     ss_table = AVL_Tree()
+=======
+    ss_table = SSTable()
+>>>>>>> 1af2a63676fe1d902731faa733b70932076a2598
 
     def __init__(self, block_size, blocks_per_SS, table_name):
         self.blk_size = block_size
         self.tbl_name = table_name
         self.blocks_per_ss = blocks_per_SS
+<<<<<<< HEAD
         self.max_records = self.blocks_per_ss * floor(blk_size / get_size_of_records())
+=======
+        self.max_records = self.blocks_per_ss * math.floor(self.blk_size / get_size_of_records())
+        print("mem table block size: "+str(block_size))
+        print("mem table blocks per ss: "+str(blocks_per_SS))
+        print("mem table max number of records: "+str(self.max_records))
+>>>>>>> 1af2a63676fe1d902731faa733b70932076a2598
 
 
     def get_range():
         return lower_bound, upper_bound
 
     def add_record(self, record):
+<<<<<<< HEAD
         self.ss_table.insert(record, record.id)# how does the avl tree work?
         self.num_records = len(AVL_Tree.getInOrder())#need better way to get num records (i.e. did it overwrite or make a new entry)
+=======
+        self.ss_table.add(record.id, record)
+>>>>>>> 1af2a63676fe1d902731faa733b70932076a2598
 
 
     def delete_record(self, record_id):
         #make new record and set the name to -1 to indicate it is a delete node
+<<<<<<< HEAD
         #this is gross but the avl tree doesnt have a search function or a count of number of elements
         deleted_record = Record(record_id,"-1","-1")
         self.ss_table.insert(deleted_record, record_id)#TODO how does the avl tree work with a root?
+=======
+        deleted_record = Record(record_id,"-1","-1")
+        self.ss_table.add(record_id, deleted_record)
+>>>>>>> 1af2a63676fe1d902731faa733b70932076a2598
         self.num_records = len(AVL_Tree.getInOrder())
         return
 
@@ -389,7 +466,12 @@ class MemTable(object):
         return ss_table.getInOrderRecords()
 
     def is_full():
+<<<<<<< HEAD
         return num_records == max_records
+=======
+        return ss_table.num_of_record == max_records
+
+>>>>>>> 1af2a63676fe1d902731faa733b70932076a2598
 
 
 
