@@ -74,9 +74,9 @@ class SlottedPage():
                 return
         raise Exception("no space to insert record")
 
-    def delete(self, record):
+    def delete(self, record_id):
         for i, rec in enumerate(self.records):
-            if rec is not None and rec.id == record.id:
+            if rec is not None and rec.id == record_id:
                 self.records[i] = None
                 self.num_records -= 1
                 return

@@ -68,6 +68,7 @@ class TestSlottedPage(unittest.TestCase):
         sp2 = SlottedPage(64, test_ba)
 
         self.assertEqual(sp[0], sp2[0])
+        self.assertEqual(type(sp2[0]), Record)
 
     def test_insert(self):
         sp = SlottedPage(66)
@@ -82,12 +83,14 @@ class TestSlottedPage(unittest.TestCase):
 
         self.assertEqual(sp[1], test_record)
 
+        self.assertEqual(type(sp[1]), Record)
+
     def test_delete(self):
         sp = SlottedPage(66)
         sp.insert(record1)
         sp.insert(record2)
 
-        sp.delete(record1)
+        sp.delete(record1.id)
         self.assertIsNone(sp[0])
         self.assertEqual(sp[1], record2)
 
@@ -95,14 +98,14 @@ class TestSlottedPage(unittest.TestCase):
         sp.insert(record1)
         sp.insert(record2)
 
-        sp.delete(record2)
+        sp.delete(record2.id)
         self.assertIsNone(sp[1])
         self.assertEqual(sp[0], record1)
 
         sp = SlottedPage(66)
         sp[1] = record2
 
-        sp.delete(record2)
+        sp.delete(record2.id)
         self.assertIsNone(sp[0])
         self.assertIsNone(sp[1])
 
