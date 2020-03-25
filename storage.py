@@ -78,6 +78,9 @@ class Storage():
     def get_blk_path(self, tbl_name, blk_id):
         return self.mnt_path + tbl_name + '/' + 'block_' + str(blk_id) + '.img'
 
+    def table_exists(self, table_name: str):
+        return os.path.exists(self.mnt_path + table_name)
+
     
 
 if __name__ == '__main__':
