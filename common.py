@@ -14,7 +14,16 @@ class ACTION(Enum):
     RETRIEVE_BY_ID = 1
     RETRIEVE_BY_AREA_CODE = 2
     WRITE_RECORD = 3
-    DELETE_TABLE = 4
+    DELETE_RECORD = 4
+    DELETE_TABLE = 5
+
+ACTION_WORDS = {
+    ACTION.RETRIEVE_BY_ID: "Retrieve by ID",
+    ACTION.RETRIEVE_BY_AREA_CODE: "Retrieve by area code",
+    ACTION.WRITE_RECORD: "Write record",
+    ACTION.DELETE_RECORD: "Delete record",
+    ACTION.DELETE_TABLE: "Delete table"
+}
 
 def pad_bits(ba: BitArray, target_len: int):
     l = len(ba)
