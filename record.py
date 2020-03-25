@@ -57,3 +57,5 @@ class Record():
                self.id == other.id and \
                self.client_name == other.client_name and \
                self.phone == other.phone
+
+        

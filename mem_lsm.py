@@ -21,127 +21,130 @@ import sys
 
 class MemLSM():
 
-    def __init__(self, my_storage: LSM, num_of_memtbls_allowed = 4):
-        self.storage = my_storage
-        self.page_table = {}
-        self.num_of_memtbls_allowed = num_of_memtbls_allowed
+    def __init__(self, SS_per_LRU = 4, block_size = 72, blocks_per_SS = 4):
+        self.SS_per_LRU = SS_per_LRU
         self.num_of_memtbls = 0
-        #TODO: create storage   
+        
+        self.storage = LSM(block_size, blocks_per_SS)  
+        self.memtbls = {}
+        self.page_table = {}
+
+    def _bsearch(self, recs: list, key):
+        l = 0
+        r = len(rec) - 1
+        while l < r:
+            m = int(l + (r - l) / 2)
+            m_key = abs(recs[m].id)
+            if m_key < key:
+                l = m + 1
+            elif m_key > key:
+                r = m - 1
+            else:
+                return recs[m]
+            
+        return 0
 
     def write_rec(self, tbl_name: str, rec: Record):
         '''
         for both update and add record in LSM
         '''
         
-        sst = None
-        
-        if not tbl_name in self.page_table:
-            #add an LRU list + an sst for this table name
-            self.check_flush()
-            sst = SST() #TODO: specify size constraints
-            sst.add(rec)
-            self.page_table[tbl_name] = [sst]
-            self.num_of_memtbls += 1
-            
+        memtbl = None
+        if tbl_name not in self.memtbls:
+            #create a memtbl if necessary 
+            memtbl = self.storage.build_memtable(tbl_name)
+            self.memtbls[tbl_name] = memtbl
         else:
-            LRU = self.page_table[tbl_name]
-            for i in range(len(LRU)):
-                sst = LRU[i]
-                #write to an existing sst
-                if not sst.isFull() and not sst.IMMUTABLE:
-                    sst.add(rec)
-                    return
-                    
-            #add new sst
-            self.check_flush()
-            sst = SST() #TODO: specify size constraints 
-            sst.add(rec)       
-            LRU.append(sst)
-            self.num_of_memtbls += 1
-            
-
-    def check_flush(self):
-        '''
-        check if memory is full
-        flush to L0 if TRUE
-        '''
-        if self.num_of_memtbls == self.num_of_memtbls_allowed:
-            #TODO: flush to L0
-            self.num_of_memtbls = 0
+            memtbl = self.memtbls[tbl_name]
         
-        
+        #flush if necessary 
+        if memtbl.is_full():
+            self.storage.push_memtable(memtbl)
+            memtbl = self.storage.build_memtable(tbl_name)
+            self.memtbls[tbl_name] = memtbl
+    
+        memtbl.add_record(rec)
+    
         
     def read_rec(self, tbl_name: str, rec_id):
-        """
-        search for rec in pagetable
+        '''
+        search for rec in memtbl (most recent), and then in page_table
         and search for it in disk it necessary
-        """ 
+        '''
 
-        #iterate through LRU to find that stt, and record
-        if tbl_name in self.page_table:
-            LRU = self.page_table[tbl_name]
-            for i in range(len(LRU) - 1, -1, -1):
-                sst = LRU[i]
-                rec = sst.search_rec(rec_id)
-                if rec:
-                    return rec
+        #search in memtbl
+        if tbl_name in self.memtbls:
+            memtbl = self.memtbls[tbl_name]
+            recs = memtbl.get_in_order_records()
+            res = self._bsearch(recs, rec_id)
+            if res:
+                return res
+        
+        #search in pagetable
 
-        #TODO: get the recs from disks
+        #search in storage
+
+        return -1
+
+    def del_tbl(self, tbl_name:str):
+        #TODO: implement
+        pass    
 
     def read_recs(self, tbl_name: str, area: str):
         """
         search for rec in pagetable
         and search for it in disk it necessary
-        """ 
+        # """ 
 
-        #iterate through LRU to find that stt, and records
-        recs = set()
-        pks = set() #store the existing primary keys to prevent duplicate reads
-        if tbl_name in self.page_table:
-            LRU = self.page_table[tbl_name]
-            for i in range(len(LRU) - 1, -1, -1):
-                sst = LRU[i]
-                tmp = set(sst.search_recs(area))
-                for x in tmp:
-                    if x.id in pks:
-                        tmp.remove(x)
-                    else:
-                        pks.add(x.id)
-                recs |= tmp
+        # #iterate through LRU to find that stt, and records
+        # recs = set()
+        # pks = set() #store the existing primary keys to prevent duplicate reads
+        # if tbl_name in self.page_table:
+        #     LRU = self.page_table[tbl_name]
+        #     for i in range(len(LRU) - 1, -1, -1):
+        #         sst = LRU[i]
+        #         tmp = set(sst.search_recs(area))
+        #         for x in tmp:
+        #             if x.id in pks:
+        #                 tmp.remove(x)
+        #             else:
+        #                 pks.add(x.id)
+        #         recs |= tmp
 
 
         #TODO: get the recs from disk
         return list(recs)
         
+    
 
 
 if __name__ == '__main__':
     if len(sys.argv) == 2 and sys.argv[1] == 'test':
-        mem = MemLSM(4)
+        mem = MemLSM()
 
         mem.write_rec('tbl1', Record(123, 'test', '401-222-3142'))
-        mem.write_rec('tbl1', Record(123, 'test', '123-222-3142'))
-        mem.write_rec('tbl2', Record(123, 'test', '123-222-3142'))
-        mem.write_rec('tbl2', Record(111, 'test', '401-222-3142'))
-        mem.write_rec('tbl2', Record(333, 'test', '401-222-3142'))
-        mem.write_rec('tbl3', Record(123, 'test', '999-222-3142'))
-        mem.write_rec('tbl2', Record(1, 'test', '123-222-3142'))
-        mem.write_rec('tbl2', Record(2, 'test', '401-222-3142'))
-        mem.write_rec('tbl2', Record(3, 'test', '999-222-3142'))
-        mem.write_rec('tbl2', Record(123, 'test', '999-111-0000'))
-        mem.write_rec('tbl1', Record(101, 'test', '401-222-3142'))
+        # mem.write_rec('tbl1', Record(123, 'test', '123-222-3142'))
+        # mem.write_rec('tbl2', Record(123, 'test', '123-222-3142'))
+        # mem.write_rec('tbl2', Record(111, 'test', '401-222-3142'))
+        # mem.write_rec('tbl2', Record(333, 'test', '401-222-3142'))
+        # mem.write_rec('tbl3', Record(123, 'test', '999-222-3142'))
+        # mem.write_rec('tbl2', Record(1, 'test', '123-222-3142'))
+        # mem.write_rec('tbl2', Record(2, 'test', '401-222-3142'))
+        # mem.write_rec('tbl2', Record(3, 'test', '999-222-3142'))
+        # mem.write_rec('tbl2', Record(123, 'test', '999-111-0000'))
+        # mem.write_rec('tbl1', Record(101, 'test', '401-222-3142'))
 
 
-        for x in mem.page_table.keys():
-            print(x)
-            for y in mem.page_table[x]:
-                print(y)
+        # for x in mem.page_table.keys():
+        #     print(x)
+        #     for y in mem.page_table[x]:
+        #         print(y)
 
-        print(mem.read_recs('tbl2', '999')) 
-        print(mem.read_recs('tbl1', '401'))
+        # print(mem.read_recs('tbl2', '999')) 
+        # print(mem.read_recs('tbl1', '401'))
 
-        print(mem.read_rec('tbl1', 123))
-        print(mem.read_rec('tbl2', 3))
+        # print(mem.read_rec('tbl1', 123))
+        # print(mem.read_rec('tbl2', 3))
         
         
 
