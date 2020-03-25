@@ -58,7 +58,7 @@ class LSMStorage():
         #TODO
         return
 
-    def build_memtable(self, block_size, table_name):
+    def build_memtable(self, table_name):
         table_exists = check_if_table_exists(table_name)
         if not table_not_exists:
             metadata_counts[table_name+"L0"] = 0
