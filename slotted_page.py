@@ -101,3 +101,9 @@ class SlottedPage():
 
     def has_space(self):
         return self.num_records < self.max_num_records 
+
+    def __str__(self):
+        return str(self.records)
+
+    def __repr__(self):
+        return str(self.records)
