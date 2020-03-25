@@ -16,15 +16,15 @@ class Storage():
         
         #2nd mount point
         add_mnt = 'storage_' + str(blk_size) + '_' + self.org_str
-        self.create_tbl(add_mnt)
+        self.create_table(add_mnt)
         self.mnt_path += add_mnt + '/'
 
-    def create_tbl(self, tbl_name: str):
+    def create_table(self, tbl_name: str):
         path = self.mnt_path + tbl_name + '/'
         os.mkdir(path)
         self.rm_dir_readonly(path)
 
-    def rm_tbl(self, tbl_name: str, cascade = True):
+    def delete_table(self, tbl_name: str, cascade = True):
         if cascade:
             shutil.rmtree(self.mnt_path + tbl_name + '/')
         else:
@@ -99,8 +99,8 @@ if __name__ == '__main__':
         check(sto.org_str + ' ' + str(sto.blk_size) + ' ' + sto.mnt_path, 'LSM 32 storage/storage_32_LSM/')
 
         #test create tables
-        for x in range(5): sto.create_tbl('x_' + str(x))
-        sto.create_tbl('x_1/1_new')
+        for x in range(5): sto.create_table('x_' + str(x))
+        sto.create_table('x_1/1_new')
 
         #test write blk + create blk, read blk (too lazy to test read and write separately)
         sto.write_blk('x_3', 23, 'datadatadatadatadatadatadatadata')
@@ -137,13 +137,13 @@ if __name__ == '__main__':
             check(e, 'block does not exist')
 
         #test delete tables (not cascade)
-        sto.rm_tbl('x_0', cascade=False)
+        sto.delete_table('x_0', cascade=False)
         testset = set(os.listdir(sto.mnt_path)) 
         for x in range(1, 5): testset.remove('x_' + str(x))
         check(testset, 'set()')
 
         #test delete tables (cascade)
-        sto.rm_tbl('x_4')
+        sto.delete_table('x_4')
         testset = set(os.listdir(sto.mnt_path)) 
         for x in range(1, 4): testset.remove('x_' + str(x))
         check(testset, 'set()')
