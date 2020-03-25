@@ -173,7 +173,7 @@ class AVL_Tree(object):
 
 class SSTable:
     
-    def __init__(self, num_of_rec_allowed = 5, IMMUTABLE = False, data:bytearray = None):
+    def __init__(self, num_of_rec_allowed = 8, IMMUTABLE = False, data:bytearray = None):
         #use an AVL tree to keep key strings sorted
         self.records = AVL_Tree()
         self.root = None
@@ -190,7 +190,8 @@ class SSTable:
             self.records = bytearray
 
     def __str__(self):
-        return str(self.records.getInOrder(self.root))
+        return str(self.records.getInOrder(self.root)) + ' num_of_recs_allowed: ' + str(self.num_of_rec_allowed) \
+            + ' num_of_recs: ' + str(self.get_num_records()) + ' isFull: ' + str(self.isFull())
 
     def add(self, rec: Record):
         '''

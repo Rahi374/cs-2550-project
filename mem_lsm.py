@@ -63,6 +63,7 @@ class MemLSM():
 
         
         #flush if necessary 
+        # print('memtbl', memtbl)
         if memtbl.is_full():
             self.storage.push_memtable(memtbl)
             memtbl = self.storage.build_memtable(tbl_name)
@@ -86,7 +87,7 @@ class MemLSM():
                 return res
         
         #search in pagetable
-
+        
         #search in storage
 
         return -1
@@ -127,14 +128,11 @@ if __name__ == '__main__':
     if len(sys.argv) == 2 and sys.argv[1] == 'test':
         mem = MemLSM()
 
+        #test write 
         mem.write_rec('tbl1', Record(123, 'test', '401-222-3142'))
         rec = mem.read_rec('tbl1', 123)
         print(rec)
 
-
-        mem.write_rec('tbl1', Record(123, 'test', '123-222-3142'))
-        mem.write_rec('tbl1', Record(101, 'test', '401-222-3142'))
-        mem.write_rec('tbl3', Record(123, 'test', '999-222-3142'))
 
         #9 tbl2 recs
         mem.write_rec('tbl2', Record(123, 'test', '123-222-3142'))
@@ -144,12 +142,18 @@ if __name__ == '__main__':
         mem.write_rec('tbl2', Record(1, 'test', '123-222-3142'))
         mem.write_rec('tbl2', Record(2, 'test', '401-222-1111'))
         mem.write_rec('tbl2', Record(3, 'test', '999-222-3142'))
-        mem.write_rec('tbl2', Record(123, 'test', '999-111-0000'))
+        mem.write_rec('tbl2', Record(122, 'test', '999-111-0000'))
         mem.write_rec('tbl2', Record(444, 'test', '999-111-4444'))
-        print(mem.memtbls['tbl2'])
+        ss = mem.memtbls['tbl2'].ss_table
+        print('client: ', ss)
 
-        rec = mem.read_rec('tbl2', 2)
-        print(rec)
+        mem.write_rec('tbl1', Record(123, 'test', '123-222-3142'))
+        mem.write_rec('tbl1', Record(101, 'test', '401-222-3142'))
+        mem.write_rec('tbl3', Record(123, 'test', '999-222-3142'))
+
+
+
+        
         
 
 

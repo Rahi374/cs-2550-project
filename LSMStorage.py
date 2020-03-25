@@ -104,6 +104,7 @@ class LSMStorage():
             self.thread_should_run[table_name] = True
             self.start_compaction_threads(table_name) #TODO re-enable this
         return MemTable(self.blk_size, self.blocks_per_ss ,table_name)
+        
 
     def push_memtable(self, memtable):
         table_name = memtable.tbl_name
@@ -413,13 +414,14 @@ class MemTable(object):
     blocks_per_ss = None
     max_records = None
     num_records = 0
-    ss_table = SSTable()
+    
 
     def __init__(self, block_size, blocks_per_SS, table_name):
         self.blk_size = block_size
         self.tbl_name = table_name
         self.blocks_per_ss = blocks_per_SS
         self.max_records = self.blocks_per_ss * math.floor(self.blk_size / get_size_of_records())
+        self.ss_table = SSTable(self.max_records)
 
     def add_record(self, record):
         self.ss_table.add(record)
@@ -434,10 +436,11 @@ class MemTable(object):
         return self.ss_table.getInOrder()
 
     def is_full(self):
-        return self.ss_table.get_num_records() == self.max_records
+        # print('isfull test: ', self.ss_table)
+        return self.ss_table.isFull()
 
     def __str__(self):
-        return str(self.get_in_order_records())
+        return str(self.get_in_order_records()) + ' is_full: ' + str(self.is_full())
 
 
 
