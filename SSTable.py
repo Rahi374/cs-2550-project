@@ -171,6 +171,7 @@ class AVL_Tree(object):
 
 class SSTable:
     
+    num_of_recs = None
     def __init__(self):
         #use an AVL tree to keep key strings sorted
         self.records = AVL_Tree()
@@ -195,9 +196,13 @@ class SSTable:
             self.num_of_rec += 1
             return 0
         return -1
-    
-        
-        
+   
+    def get_num_records(self):
+        return self.num_of_recs
+
+    def getInOrder(self):
+        return self.records.getInOrder(self.root)
+
     def search_rec(self, key):
         '''
         fetches the TreeNode that pk maps to 

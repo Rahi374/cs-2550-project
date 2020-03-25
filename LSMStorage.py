@@ -70,6 +70,7 @@ class LSMStorage():
             self.L1_lock_hm[table_name] = threading.Lock()
             self.L2_lock_hm[table_name] = threading.Lock()
             self.create_table_structure(table_name)
+            self.start_compaction_threads(table_name)
         return MemTable(self.blk_size, self.blocks_per_ss ,table_name)
 
     def push_memtable(self, memtable):
@@ -132,10 +133,10 @@ class LSMStorage():
         return byte_arr
 
     def write_records_to_level_SST(self, records, table_name, lower, upper, level):
-        remove_duplicate_level_entries(records, table_name, level)
-        records_per_block = blk_size / get_size_of_records()
+        self.remove_duplicate_level_entries(records, table_name, level)
+        records_per_block = self.blk_size / get_size_of_records()
         dir_path = "storage/"+table_name+"/"+level+"/SST"+metadata_counts[table_name+level]
-        metadata_ranges[dir_path] = (lower, upper)
+        self.metadata_ranges[dir_path] = (lower, upper)
         os.mkdir(dir_path)
         records_to_write = len(records)
         c = 0 #file number
@@ -190,20 +191,20 @@ class LSMStorage():
         return None, -1
 
 
-    def remove_duplicate_level_entries(records, table_name, level):
+    def remove_duplicate_level_entries(self, records, table_name, level):
         rec_hm = {}
         for r in records:
             rec_hm[r.id] = r
         dir_path = "storage/"+table_name+"/"+level+"/"
         ss_tables_in_L0 = os.listdir(dir_path)
         for sst in ss_tables_in_L0:
-            remove_duplicates_from_ss_table(sst, rec_hm, "/"+level+"/")
+            self.remove_duplicates_from_ss_table(sst, rec_hm, "/"+level+"/")
 
     def remove_duplicates_from_ss_table(sst, rec_hm, level):
         dir_path = "storage/"+table_name+level+sst
         blocks_in_sst = os.listdir(dir_path)
         for b in blocks_in_sst:
-            remove_duplicates_from_block(b, rec_hm)
+            self.remove_duplicates_from_block(b, rec_hm)
 
     def remove_duplicates_from_block(b, rec_hm, level):
         num_recs = b.split("_")[1]
@@ -222,43 +223,43 @@ class LSMStorage():
         
 
     def start_compaction_threads(self, table_name):
-        L0_comp_thread = threading.Thread(target=start_L0Compaction, args=(table_name,))
-        L1_comp_thread = threading.Thread(target=start_L1Compaction, args=(table_name,))
-        compaction_thread_hm["L0"+table_name] = L0_comp_thread
-        compaction_thread_hm["L1"+table_name] = L1_comp_thread
+        L0_comp_thread = threading.Thread(target=self.start_L0Compaction, args=(table_name,))
+        L1_comp_thread = threading.Thread(target=self.start_L1Compaction, args=(table_name,))
+        self.compaction_thread_hm["L0"+table_name] = L0_comp_thread
+        self.compaction_thread_hm["L1"+table_name] = L1_comp_thread
         L0_comp_thread.start()
         L1_comp_thread.start()
 
     def start_L0Compaction(self, table_name):
-        L0_lock = L0_lock_hm[table_name]
-        L1_lock = L1_lock_hm[table_name]
+        L0_lock = self.L0_lock_hm[table_name]
+        L1_lock = self.L1_lock_hm[table_name]
         while True:
             L0_lock.acquire()
             L1_lock.acquire()
-            compact_L0(table_name)
+            self.compact_L0(table_name)
             L1_lock.release()
             L0_lock.release()
             time.sleep(5)
 
     def start_L1Compaction(self,table_name):
-        L1_lock = L1_lock_hm[table_name]
-        L2_lock = L2_lock_hm[table_name]
+        L1_lock = self.L1_lock_hm[table_name]
+        L2_lock = self.L2_lock_hm[table_name]
         while True:
             L1_lock.acquire()
             L2_lock.acquire()
-            compact_L1(table_name)
+            self.compact_L1(table_name)
             L2_lock.release()
             L1_lock.release()
             time.sleep(10)
 
 
-    def compact_L0(table_name):
-        if metadata_counts[table_name+"L1"] > 6:#if L1 would not be able to take L0, compact it
-            L1_lock = L1_lock_hm[table_name]
-            L2_lock = L2_lock_hm[table_name]
+    def compact_L0(self, table_name):
+        if self.metadata_counts[table_name+"L1"] > 6:#if L1 would not be able to take L0, compact it
+            L1_lock = self.L1_lock_hm[table_name]
+            L2_lock = self.L2_lock_hm[table_name]
             L1_lock.acquire()
             L2_lock.acquire()
-            compact_L1(table_name)
+            self.compact_L1(table_name)
             L2_lock.release()
             L1_lock.release()
         list_of_records = []
@@ -282,18 +283,20 @@ class LSMStorage():
             os.remove(dir_of_L0+"/"+sst)
         list_of_records = [r for r in list_of_records if r.id != -2]
         list_of_records.sort(key=lambda x: x.id)
-        write_L0_records_to_L1(list_of_records, table_name)
-
-        metadata_counts[table_name+"L0"] = 0
+        self.write_L0_records_to_L1(list_of_records, table_name)
+        self.metadata_counts[table_name+"L0"] = 0
         return
 
 
-    def write_L0_records_to_L1(recs, table_name):
-        remove_duplicate_level_entries(recs, table_name, "L1")
-        write_records_to_level_SST(recs, table_name, "L1")
+    def write_L0_records_to_L1(self, recs, table_name):
+        if len(recs) == 0:
+            return
+        self.remove_duplicate_level_entries(recs, table_name, "L1")
+        lower, upper = recs[0], recs[-1]
+        self.write_records_to_level_SST(recs, table_name, lower, upper, "L1")
         
 
-    def compact_L1(table_name):
+    def compact_L1(self, table_name):
         list_of_records = []
         dir_of_L1 = "storage/"+table_name+"/L1"
         for sst in os.listdir(dir_of_L1):
@@ -315,14 +318,13 @@ class LSMStorage():
             os.remove(dir_of_L1+"/"+sst)
         list_of_records = [r for r in list_of_records if r.id != -2]
         list_of_records.sort(key=lambda x: x.id)
-        write_L1_records_to_L2(list_of_records, table_name)
-
-        metadata_counts[table_name+"L1"] = 0
+        self.write_L1_records_to_L2(list_of_records, table_name)
+        self.metadata_counts[table_name+"L1"] = 0
         return
     
 
-        def write_L1_records_to_L2(recs, table_name):
-            remove_duplicate_level_entries(recs, table_name, "L2")
+        def write_L1_records_to_L2(self, recs, table_name):
+            self.remove_duplicate_level_entries(recs, table_name, "L2")
             list_of_records = []
             dir_of_L2 = "storage/"+table_name+"/L2"
             for sst in os.listdir(dir_of_L2):
@@ -346,7 +348,7 @@ class LSMStorage():
             for rec in recs:
                 list_of_records.append(rec)
             list_of_records.sort(key=lambda x: x.id)
-            write_records_to_level_SST(list_of_records, table_name, list_of_records[0].id, list_of_records[-1].id, "L2")
+            self.write_records_to_level_SST(list_of_records, table_name, list_of_records[0].id, list_of_records[-1].id, "L2")
             return
 
 
@@ -357,8 +359,6 @@ class MemTable(object):
     blk_size = None
     tbl_name = None
     blocks_per_ss = None
-    lower_bound = None
-    upper_bound = None
     max_records = None
     num_records = 0
     ss_table = SSTable()
@@ -372,26 +372,20 @@ class MemTable(object):
         print("mem table blocks per ss: "+str(blocks_per_SS))
         print("mem table max number of records: "+str(self.max_records))
 
-
-    def get_range():
-        return lower_bound, upper_bound
-
     def add_record(self, record):
-        self.ss_table.add(record.id, record)
-
+        self.ss_table.add(record)
 
     def delete_record(self, record_id):
         #make new record and set the name to -1 to indicate it is a delete node
         deleted_record = Record(record_id,"-1","-1")
-        self.ss_table.add(record_id, deleted_record)
-        self.num_records = len(AVL_Tree.getInOrder())
+        self.ss_table.add(deleted_record)
         return
 
     def get_in_order_records(self):
-        return ss_table.getInOrderRecords()
+        return self.ss_table.getInOrder()
 
-    def is_full():
-        return ss_table.num_of_record == max_records
+    def is_full(self):
+        return self.ss_table.get_num_records() == self.max_records
 
 
 
