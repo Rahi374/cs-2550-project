@@ -114,7 +114,9 @@ class AVL_Tree(object):
     def getInOrder(self, root, searchArea = False, area = ''):
         '''
         return the in-order string
-        used for printing and getting min an max key value
+        used for printing and getting min an max key value,
+
+        searchArea: True, returns the list of records matched by area code
         '''
         if not root: 
             return []
@@ -125,7 +127,7 @@ class AVL_Tree(object):
 
         if not searchArea:
             if l: res += l
-            res.append(root.val)
+            res.append(root.data)
             if r: res += r
 
         else:
@@ -171,16 +173,25 @@ class AVL_Tree(object):
 
 class SSTable:
     
-    def __init__(self):
+    def __init__(self, num_of_rec_allowed = 5, IMMUTABLE = False, data:bytearray = None):
         #use an AVL tree to keep key strings sorted
         self.records = AVL_Tree()
         self.root = None
         self.num_of_rec = 0
-        
+        self.num_of_rec_allowed = num_of_rec_allowed
+
         #key range used for merging
         self.lo = None
         self.hi = None
-    
+
+        #whether it has stored on disk
+        self.IMMUTABLE = IMMUTABLE
+        if self.IMMUTABLE:
+            self.records = bytearray
+
+    def __str__(self):
+        return str(self.records.getInOrder(self.root))
+
     def add(self, rec: Record):
         '''
         add a write record
@@ -189,6 +200,7 @@ class SSTable:
         node = self.records.searchNode(self.root, key)
         if node:
             node.data = rec
+            # print('overwrite',node)
             return 1
         else:
             self.root = self.records.insert(self.root, key, rec)
@@ -202,21 +214,32 @@ class SSTable:
     def getInOrder(self):
         return self.records.getInOrder(self.root)
 
+
+
     def search_rec(self, key):
         '''
         fetches the TreeNode that pk maps to 
         returns the record within that node
         '''
-        node = self.records.searchNode(self.root, key)
-        return node.data
+        if not self.IMMUTABLE:
+            node = self.records.searchNode(self.root, key)
+        #TODO: binary search bytearray for key if IMMUTABLE
+        
+        if node: 
+            return node.data
+        return node
 
     def search_recs(self, area):
         '''
         fetches the TreeNodes are the area code maps to 
         returns the list of records with those nodes
         '''
-        nodes = self.records.getInOrder(self.root, True, area)
+        if not self.IMMUTABLE:
+            nodes = self.records.getInOrder(self.root, True, area)
+        #TODO: linear search bytearray for recs if IMMUTABLE 
+        
         return nodes
+
 
     
     def getKeyRange(self):
@@ -227,6 +250,12 @@ class SSTable:
         sortedKeys = self.records.getInOrder(self.root)
         return (sortedKeys[0], sortedKeys[-1])
 
+    def isFull(self):
+        '''
+        return True if SSTable is full
+        '''
+        return self.num_of_rec == self.num_of_rec_allowed
+
 
 if __name__ == '__main__':
     
@@ -234,24 +263,29 @@ if __name__ == '__main__':
         sstable = SSTable()
 
         sstable.add(Record(123, 'test', '401-222-3142'))
-        sstable.add(Record(122, 'test', '401-222-3142'))
+        sstable.add(Record(122, 'test', '401-222-0000'))
         sstable.add(Record(10, 'test', '412-222-3142'))
         print(sstable.num_of_rec)
 
         sstable.add(Record(13, 'test', '412-222-3142'))
         print(sstable.num_of_rec)
 
-        sstable.add(Record(122, 'test', '333-222-3142'))
+        sstable.add(Record(122, 'test', '333-222-9999'))
         print(sstable.num_of_rec)
 
-        sstable.add(Record(100, 'test', '333-222-3142'))
+        sstable.add(Record(100, 'test', '333-222-3143'))
         
         print(sstable.records.getInOrder(sstable.root))
+
+        print(sstable.search_rec(100))
+        print(sstable.search_rec(122))
 
         print(sstable.search_recs('333'))
         print(sstable.search_recs('412'))
         
         for x in sstable.getKeyRange(): print(str(x))
+        print(sstable)
+        print(sstable.isFull())
     
 
   

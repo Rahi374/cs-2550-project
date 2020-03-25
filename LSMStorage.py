@@ -44,16 +44,20 @@ class LSMStorage():
     def get_record(self, record_id, table_name):
         table_exists = self.check_if_table_exists(table_name)
         if not table_exists:
+            print("no table")
             return -1
         else:
-            rec, ss = check_level_for_rec(record_id, table_name, "L0")
+            rec, ss = self.check_level_for_rec(record_id, table_name, "L0")
             if ss == -1:
-                rec, ss = check_level_for_rec(record_id, table_name, "L1")
+                rec, ss = self.check_level_for_rec(record_id, table_name, "L1")
                 if ss == -1:
-                    rec, ss = check_level_for_rec(record_id, table_name, "L2")
+                    print("checking L2")
+                    rec, ss = self.check_level_for_rec(record_id, table_name, "L2")
                 else:
+                    print("found in L1")
                     return rec, ss
             else:
+                print("found in L0")
                 return rec, ss
             return rec, ss
     def get_records(self, table_name, area_code):
@@ -70,7 +74,7 @@ class LSMStorage():
             self.L1_lock_hm[table_name] = threading.Lock()
             self.L2_lock_hm[table_name] = threading.Lock()
             self.create_table_structure(table_name)
-            self.start_compaction_threads(table_name) #TODO re-enable this
+            #self.start_compaction_threads(table_name) #TODO re-enable this
         return MemTable(self.blk_size, self.blocks_per_ss ,table_name)
 
     def push_memtable(self, memtable):
@@ -140,6 +144,7 @@ class LSMStorage():
         self.remove_duplicate_level_entries(records, table_name, level)
         records_per_block = math.floor(self.blk_size / get_size_of_records())
         dir_path = "storage/"+table_name+"/"+level+"/SST"+str(self.metadata_counts[table_name+level])
+        self.metadata_counts[table_name+level] = self.metadata_counts[table_name+level] + 1
         self.metadata_ranges[dir_path] = (lower, upper)
         os.mkdir(dir_path)
         records_to_write = len(records)
@@ -156,10 +161,10 @@ class LSMStorage():
                 records_to_write = 0
             else:
                 recs_to_write = records[i:i+records_per_block]
-                print("writing records:")
-                print(recs_to_write)
-                print("\n\n\n")
-                print(self.get_byte_array_of_records(recs_to_write))
+                #print("writing records in level sst:")
+                #print(recs_to_write)
+                #print("\n\n\n")
+                #print(self.get_byte_array_of_records(recs_to_write))
                 f = open(dir_path+"/"+str(c)+"_"+str(records_per_block), "wb+")
                 f.write(self.get_byte_array_of_records(recs_to_write))
                 f.close()
@@ -174,27 +179,26 @@ class LSMStorage():
         rec, ss = None, -1
         for s in ss_tables:
             lower, upper = self.metadata_ranges[dir_path+"/"+s]
-            if lower < record_id and upper > record_id:
-                rec, ss = check_sst_for_record(record_id, table_name, level, sst_num)
+            if lower <= record_id and upper >= record_id:
+                rec, ss = self.check_sst_for_record(record_id, table_name, level, s)
                 if ss != -1:
                     return rec, ss
         return rec, ss
 
-    def check_sst_for_record(self, record_id, table_name, level, sst_num):
-        dir_path = "storage/"+table_name+"/"+level+"/SST"+sst_num
+    def check_sst_for_record(self, record_id, table_name, level, sst):
+        dir_path = "storage/"+table_name+"/"+level+"/"+sst
         blocks = os.listdir(dir_path)
         for b in blocks:
             f = open(dir_path+"/"+b, "rb")
             b_arr = bytearray(f.read())
-            num_recs = b.split("_")[1]
+            num_recs = int(b.split("_")[1])
             rec_num = 0
             for i in range(num_recs):
                 start_of_rec = i*get_size_of_records()
-                rec_id = int(b_arr[start_of_rec:start_of_rec+4])
+                rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
                 if rec_id == record_id:
-                    rec_id = int(b_arr[start_of_rec:start_of_rec+4])
-                    rec_name = str(b_arr[start_of_rec+4:start_of_rec+20])
-                    rec_phone = str(b_arr[start_of_rec+20:start_of_rec+32])
+                    rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
+                    rec_phone = b_arr[start_of_rec+20:start_of_rec+32].decode()
                     return Record(rec_id, rec_name, rec_phone), b_arr
 
             f.close()
@@ -202,34 +206,33 @@ class LSMStorage():
 
 
     def remove_duplicate_level_entries(self, records, table_name, level):
-        print("\n\n***\n\n")
-        print(records)
         rec_hm = {}
         for r in records:
             rec_hm[r.id] = r
         dir_path = "storage/"+table_name+"/"+level+"/"
         ss_tables_in_L0 = os.listdir(dir_path)
         for sst in ss_tables_in_L0:
-            self.remove_duplicates_from_ss_table(sst, rec_hm, "/"+level+"/")
+            self.remove_duplicates_from_ss_table(sst, rec_hm, table_name,"/"+level+"/")
 
-    def remove_duplicates_from_ss_table(sst, rec_hm, level):
+    def remove_duplicates_from_ss_table(self, sst, rec_hm, table_name, level):
         dir_path = "storage/"+table_name+level+sst
         blocks_in_sst = os.listdir(dir_path)
         for b in blocks_in_sst:
-            self.remove_duplicates_from_block(b, rec_hm)
+            self.remove_duplicates_from_block(b, rec_hm, table_name, sst,level)
 
-    def remove_duplicates_from_block(b, rec_hm, level):
-        num_recs = b.split("_")[1]
+    def remove_duplicates_from_block(self, b, rec_hm, table_name, sst,level):
+        num_recs = int(b.split("_")[1])
         dir_path = "storage/"+table_name+level+sst+"/"+b
-        f = open(dir_path, "w+b")
+        #time.sleep(20)
+        f = open(dir_path, "rb")
         b_arr = bytearray(f.read())
-        rec_num = 0
         for r in range(num_recs):
-            start_of_rec = rec_num * get_size_of_records() 
-            rec_id = int(b_arr[start_of_rec:start_of_rec+4])
-            if rec_hm[rec_id] != None:
-                b_arr[start_of_rec:start_of_rec+4] = bytearray([(-2 >> shift) & 0xff for shift in [0, 8, 16, 24]])
-            rec_num += 1
+            start_of_rec = r * get_size_of_records() 
+            rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
+            if rec_id in rec_hm:
+                b_arr = b_arr[0:start_of_rec] + Record(-2,"-1","-1").to_bytearray() + b_arr[start_of_rec+32:]
+        f.close()
+        f = open(dir_path, "wb+")
         f.write(b_arr)
         f.close()
         
@@ -240,7 +243,7 @@ class LSMStorage():
         self.compaction_thread_hm["L0"+table_name] = L0_comp_thread
         self.compaction_thread_hm["L1"+table_name] = L1_comp_thread
         L0_comp_thread.start()
-        L1_comp_thread.start()
+        #L1_comp_thread.start() #TODO re-enable this
 
     def start_L0Compaction(self, table_name):
         L0_lock = self.L0_lock_hm[table_name]
@@ -281,7 +284,7 @@ class LSMStorage():
                 print("\n\n**************************")
                 file_name = dir_of_L0+"/"+sst+"/"+b
                 print(file_name)
-                f = open(file_name, "wb+")
+                f = open(file_name, "rb")
                 b_arr = bytearray(f.read())
                 num_recs = int(b.split("_")[1])
                 rec_num = 0

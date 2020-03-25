@@ -35,12 +35,12 @@ class SlottedPage():
             off = ba[bit_index_2:bit_index_1].int
             if off >= block_size:
                 continue
-            id = block[off] + (block[off+1] << 8) + (block[off+2] << 16) + (block[off+3] << 24)
-            name = block[off+4:off+20].decode("ascii")
-            phone = block[off+20:off+32].decode("ascii")
-            if id == 0 and name[0] == "\0" and phone[0] == "\0":
+
+            try:
+                r = Record(ba=block[off:off+32])
+            except Exception:
                 continue
-            self.records[i] = Record(id, name.strip('\0'), phone.strip('\0'))
+            self.records[i] = r
             self.num_records += 1
 
 
