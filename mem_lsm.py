@@ -21,7 +21,7 @@ import sys
 
 class MemLSM():
 
-    def __init__(self, SS_per_LRU = 4, block_size = 72, blocks_per_SS = 4):
+    def __init__(self, SS_per_LRU = 4, block_size = 64, blocks_per_SS = 4):
         self.SS_per_LRU = SS_per_LRU
         self.num_of_memtbls = 0
         
@@ -30,11 +30,15 @@ class MemLSM():
         self.page_table = {}
 
     def _bsearch(self, recs: list, key):
+        if not recs:
+            return -1 
+            
         l = 0
-        r = len(rec) - 1
+        r = len(recs)
         while l < r:
             m = int(l + (r - l) / 2)
             m_key = abs(recs[m].id)
+            # print(l, m, r, m_key)
             if m_key < key:
                 l = m + 1
             elif m_key > key:
@@ -56,6 +60,7 @@ class MemLSM():
             self.memtbls[tbl_name] = memtbl
         else:
             memtbl = self.memtbls[tbl_name]
+
         
         #flush if necessary 
         if memtbl.is_full():
@@ -71,11 +76,11 @@ class MemLSM():
         search for rec in memtbl (most recent), and then in page_table
         and search for it in disk it necessary
         '''
-
         #search in memtbl
         if tbl_name in self.memtbls:
             memtbl = self.memtbls[tbl_name]
             recs = memtbl.get_in_order_records()
+            # print(recs)
             res = self._bsearch(recs, rec_id)
             if res:
                 return res
@@ -123,16 +128,29 @@ if __name__ == '__main__':
         mem = MemLSM()
 
         mem.write_rec('tbl1', Record(123, 'test', '401-222-3142'))
-        # mem.write_rec('tbl1', Record(123, 'test', '123-222-3142'))
-        # mem.write_rec('tbl2', Record(123, 'test', '123-222-3142'))
-        # mem.write_rec('tbl2', Record(111, 'test', '401-222-3142'))
-        # mem.write_rec('tbl2', Record(333, 'test', '401-222-3142'))
-        # mem.write_rec('tbl3', Record(123, 'test', '999-222-3142'))
-        # mem.write_rec('tbl2', Record(1, 'test', '123-222-3142'))
-        # mem.write_rec('tbl2', Record(2, 'test', '401-222-3142'))
-        # mem.write_rec('tbl2', Record(3, 'test', '999-222-3142'))
-        # mem.write_rec('tbl2', Record(123, 'test', '999-111-0000'))
-        # mem.write_rec('tbl1', Record(101, 'test', '401-222-3142'))
+        rec = mem.read_rec('tbl1', 123)
+        print(rec)
+
+
+        mem.write_rec('tbl1', Record(123, 'test', '123-222-3142'))
+        mem.write_rec('tbl1', Record(101, 'test', '401-222-3142'))
+        mem.write_rec('tbl3', Record(123, 'test', '999-222-3142'))
+
+        #9 tbl2 recs
+        mem.write_rec('tbl2', Record(123, 'test', '123-222-3142'))
+        mem.write_rec('tbl2', Record(111, 'test', '401-222-3142'))
+        mem.write_rec('tbl2', Record(333, 'test', '401-222-3142'))
+        mem.write_rec('tbl2', Record(13, 'eeee', '411-222-3142'))
+        mem.write_rec('tbl2', Record(1, 'test', '123-222-3142'))
+        mem.write_rec('tbl2', Record(2, 'test', '401-222-1111'))
+        mem.write_rec('tbl2', Record(3, 'test', '999-222-3142'))
+        mem.write_rec('tbl2', Record(123, 'test', '999-111-0000'))
+        mem.write_rec('tbl2', Record(444, 'test', '999-111-4444'))
+        print(mem.memtbls['tbl2'])
+
+        rec = mem.read_rec('tbl2', 2)
+        print(rec)
+        
 
 
         # for x in mem.page_table.keys():

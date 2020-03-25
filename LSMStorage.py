@@ -436,6 +436,9 @@ class MemTable(object):
     def is_full(self):
         return self.ss_table.get_num_records() == self.max_records
 
+    def __str__(self):
+        return str(self.get_in_order_records())
+
 
 
 
