@@ -57,40 +57,6 @@ class LSMStorage():
             else:
                 return rec, ss
             return rec, ss
-
-       
-    def check_level_for_rec(self, record_id, table_name, level):
-        dir_path = "storage/"+table_name+"/"+level
-        ss_tables = os.listdir(dir_path)
-        rec, ss = None, -1
-        for s in ss_tables:
-            lower, upper = metadata_ranges[dir_path+"/"+s]
-            if lower < record_id and upper > record_id:
-                rec, ss = check_sst_for_record(record_id, table_name, level, sst_num)
-                if ss != -1:
-                    return rec, ss
-        return rec, ss
-
-    def check_sst_for_record(self, record_id, table_name, level, sst_num):
-        dir_path = "storage/"+table_name+"/"+level+"/SST"+sst_num
-        blocks = os.listdir(dir_path)
-        for b in blocks:
-            f = open(dir_path+"/"+b, "rb")
-            b_arr = bytearray(f.read())
-            num_recs = b.split("_")[1]
-            rec_num = 0
-            for i in range(num_recs):
-                start_of_rec = i*get_size_of_records()
-                rec_id = int(b_arr[start_of_rec:start_of_rec+4])
-                if rec_id == record_id:
-                    rec_id = int(b_arr[start_of_rec:start_of_rec+4])
-                    rec_name = str(b_arr[start_of_rec+4:start_of_rec+20])
-                    rec_phone = str(b_arr[start_of_rec+20:start_of_rec+32])
-                    return Record(rec_id, rec_name, rec_phone)), b_arr
-
-            f.close()
-        return None, -1
-
     def get_records(self, table_name, area_code):
         #TODO
         return
@@ -111,7 +77,7 @@ class LSMStorage():
         table_name = memtable.tbl_name
         L0_lock_hm[table_name].acquire()
         all_records = memtable.get_in_order_records()
-        lower, upper = memtable.get_ranges()
+        lower, upper = all_records[0], all_records[-1]
         write_records_to_level_SST(all_records, memtable.tbl_name, lower, upper, "L0")
         metadata_counts[table_name+"L0"] = metadata_counts[table_name+"L0"] + 1 
         L0_lock_hm[table_name].release()
@@ -191,7 +157,39 @@ class LSMStorage():
                 c += 1
                 i += records_per_block
 
-    
+       
+    def check_level_for_rec(self, record_id, table_name, level):
+        dir_path = "storage/"+table_name+"/"+level
+        ss_tables = os.listdir(dir_path)
+        rec, ss = None, -1
+        for s in ss_tables:
+            lower, upper = metadata_ranges[dir_path+"/"+s]
+            if lower < record_id and upper > record_id:
+                rec, ss = check_sst_for_record(record_id, table_name, level, sst_num)
+                if ss != -1:
+                    return rec, ss
+        return rec, ss
+
+    def check_sst_for_record(self, record_id, table_name, level, sst_num):
+        dir_path = "storage/"+table_name+"/"+level+"/SST"+sst_num
+        blocks = os.listdir(dir_path)
+        for b in blocks:
+            f = open(dir_path+"/"+b, "rb")
+            b_arr = bytearray(f.read())
+            num_recs = b.split("_")[1]
+            rec_num = 0
+            for i in range(num_recs):
+                start_of_rec = i*get_size_of_records()
+                rec_id = int(b_arr[start_of_rec:start_of_rec+4])
+                if rec_id == record_id:
+                    rec_id = int(b_arr[start_of_rec:start_of_rec+4])
+                    rec_name = str(b_arr[start_of_rec+4:start_of_rec+20])
+                    rec_phone = str(b_arr[start_of_rec+20:start_of_rec+32])
+                    return Record(rec_id, rec_name, rec_phone)), b_arr
+
+            f.close()
+        return None, -1
+
 
     def remove_duplicate_level_entries(records, table_name, level):
         rec_hm = {}
@@ -256,6 +254,14 @@ class LSMStorage():
 
 
     def compact_L0(table_name):
+        if metadata_counts[table_name+"L1"] > 6:#if L1 would not be able to take L0, compact it
+            L1_lock = L1_lock_hm[table_name]
+            L2_lock = L2_lock_hm[table_name]
+            L1_lock.acquire()
+            L2_lock.acquire()
+            compact_L1(table_name)
+            L2_lock.release()
+            L1_lock.release()
         list_of_records = []
         dir_of_L0 = "storage/"+table_name+"/L0"
         for sst in os.listdir(dir_of_L0):
@@ -362,30 +368,22 @@ class MemTable(object):
         self.blk_size = block_size
         self.tbl_name = table_name
         self.blocks_per_ss = blocks_per_SS
-        self.max_records = (self.blocks_per_ss * blk_size) / get_size_of_records()
+        self.max_records = self.blocks_per_ss * floor(blk_size / get_size_of_records())
 
 
     def get_range():
         return lower_bound, upper_bound
 
     def add_record(self, record):
-        if lower_bound is None:
-            lower_bound = record.id
-            upper_bound = record.id
-        else if record.id < lower_bound:
-            lower_bound = record.id
-        else if record.id > upper_bound:
-            upper_bound = record.id
-        
-        self.ss_table.insert(record, record.id)
-        self.num_records += 1
+        self.ss_table.insert(record, record.id)# how does the avl tree work?
+        self.num_records = len(AVL_Tree.getInOrder())#need better way to get num records (i.e. did it overwrite or make a new entry)
 
 
     def delete_record(self, record_id):
         #make new record and set the name to -1 to indicate it is a delete node
         #this is gross but the avl tree doesnt have a search function or a count of number of elements
         deleted_record = Record(record_id,"-1","-1")
-        self.ss_table.insert(deleted_record, record_id)
+        self.ss_table.insert(deleted_record, record_id)#TODO how does the avl tree work with a root?
         self.num_records = len(AVL_Tree.getInOrder())
         return
 
