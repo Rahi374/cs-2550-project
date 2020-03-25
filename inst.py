@@ -18,3 +18,14 @@ class Instruction():
             self.record_id = data
         elif self.action == ACTION.WRITE_RECORD:
             self.tuple_data = data
+
+    def __str__(self):
+        if self.action == ACTION.RETRIEVE_BY_ID or \
+           self.action == ACTION.RETRIEVE_BY_AREA_CODE or \
+           self.action == ACTION.DELETE_RECORD:
+            data = self.record_id
+        elif self.action == ACTION.WRITE_RECORD:
+            data = self.tuple_data
+        elif self.action == ACTION.DELETE_TABLE:
+            data = None
+        return f"{ACTION_WORDS[self.action]}, {self.table_name}, {data}"
