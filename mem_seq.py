@@ -200,3 +200,12 @@ class MemSeq():
                     highest_block_id = block_id 
 
         return highest_block_id + 1
+
+    def delete_table_in_mem(self, table_name: str):
+        self.cache.delete_table(table_name)
+
+    def flush(self):
+        self.cache.flush_cache()
+
+    def print_cache(self):
+        self.cache.print_cache()
