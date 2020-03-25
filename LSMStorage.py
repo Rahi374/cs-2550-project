@@ -51,13 +51,10 @@ class LSMStorage():
             if ss == -1:
                 rec, ss = self.check_level_for_rec(record_id, table_name, "L1")
                 if ss == -1:
-                    print("checking L2")
                     rec, ss = self.check_level_for_rec(record_id, table_name, "L2")
                 else:
-                    print("found in L1")
                     return rec, ss
             else:
-                print("found in L0")
                 return rec, ss
             return rec, ss
     def get_records(self, table_name, area_code):
@@ -201,11 +198,22 @@ class LSMStorage():
                 if rec_id == record_id:
                     rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
                     rec_phone = b_arr[start_of_rec+20:start_of_rec+32].decode()
-                    return Record(rec_id, rec_name, rec_phone), b_arr
+                    f.close()
+                    return Record(rec_id, rec_name, rec_phone), self.get_sst_as_b_arr(table_name, level, sst)
 
             f.close()
         return None, -1
 
+    def get_sst_as_b_arr(self, table_name, level, sst):
+        b_arr = bytearray()
+        sst_dir = "storage/"+table_name+"/"+level+"/"+sst
+        dirs = os.listdir(sst_dir)
+        dirs.sort()
+        for b in dirs:
+            f = open(sst_dir+"/"+b, "rb")
+            b_arr += bytearray(f.read())
+            f.close()
+        return b_arr
 
     def remove_duplicate_level_entries(self, records, table_name, level):
         rec_hm = {}
