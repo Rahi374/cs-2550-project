@@ -57,9 +57,35 @@ class LSMStorage():
             else:
                 return rec, ss
             return rec, ss
-    def get_records(self, table_name, area_code):
-        #TODO
-        return
+
+    def get_records(self, area_code, table_name, hm_keys_found):
+        list_of_bytearrays = []
+        get_matching_area_code_byte_arrays(list_of_bytearrays, table_name, area_code, "L0")
+        get_matching_area_code_byte_arrays(list_of_bytearrays, table_name, area_code, "L1")
+        get_matching_area_code_byte_arrays(list_of_bytearrays, table_name, area_code, "L2")
+        return list_of_bytearrays
+
+    def get_matching_area_code_byte_arrays(self, list_of_bytearrays, table_name, area_code, level):
+        level_dir = "storage/"+level
+        for sst in os.listdir(level_dir):
+            sst_dir = level_dir + "/" + sst
+            if self.sst_contains_record_matching_area_code(sst_dir, area_code):
+                list_of_bytearrays.append(self.get_sst_as_b_arr(table_name, level, sst))
+
+    def sst_contains_record_matching_area_code(self, sst_dir, area_code):
+        blocks = os.listdir(sst_dir)
+        for b in blocks:
+            num_recs = int(b.split("_")[1])
+            f = open(sst_dir+"/"+b, "rb")
+            b_arr = bytearray(f.read())
+            for i in range(num_recs):
+                start_of_rec = i * get_size_of_records()
+                rec_phone_num = b_arr[start_of_rec+20:start_of_rec+32].decode()
+                rec_area_code = phone_num.split("-")[0]
+                if rec_area_code = area_code:
+                    f.close()
+                    return True
+            f.close()
 
     def build_memtable(self, table_name):
         table_exists = self.check_if_table_exists(table_name)
