@@ -359,7 +359,7 @@ class MemTable(object):
     upper_bound = None
     max_records = None
     num_records = 0
-    ss_table = AVL_Tree()
+    ss_table = SSTable()
 
     def __init__(self, block_size, blocks_per_SS, table_name):
         self.blk_size = block_size
@@ -372,15 +372,13 @@ class MemTable(object):
         return lower_bound, upper_bound
 
     def add_record(self, record):
-        self.ss_table.insert(record, record.id)# how does the avl tree work?
-        self.num_records = len(AVL_Tree.getInOrder())#need better way to get num records (i.e. did it overwrite or make a new entry)
+        self.ss_table.insert(record.id, record)
 
 
     def delete_record(self, record_id):
         #make new record and set the name to -1 to indicate it is a delete node
-        #this is gross but the avl tree doesnt have a search function or a count of number of elements
         deleted_record = Record(record_id,"-1","-1")
-        self.ss_table.insert(deleted_record, record_id)#TODO how does the avl tree work with a root?
+        self.ss_table.insert(record_id, deleted_record)
         self.num_records = len(AVL_Tree.getInOrder())
         return
 
@@ -388,7 +386,7 @@ class MemTable(object):
         return ss_table.getInOrderRecords()
 
     def is_full():
-        return num_records == max_records
+        return ss_table.num_of_record == max_records
 
 
 
