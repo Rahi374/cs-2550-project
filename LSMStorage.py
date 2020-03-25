@@ -19,10 +19,9 @@ class LSMStorage():
         self.blk_size = block_size
         self.blocks_per_ss = blocks_per_SS
         #delete old directory if exists
-        if os.path.isdir('strorage'):
+        if os.path.isdir('storage'):
             try:
-                shutil.rmtree('storage')
-                os.rmdir('storage')
+                shutil.rmtree('storage/')
             except Exception as e:
                 print(e)
                 print("exception in deletion of old storage")
