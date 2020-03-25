@@ -40,9 +40,10 @@ class SlottedPageCache():
 
 
     def can_add(self):
-        return len(cache_dic) + 1 <= self.MAX_NUM_BLOCKS
+        return len(self.cache_dic) + 1 <= self.MAX_NUM_BLOCKS
 
     def evict(self):
+        print("evicting!")
         least_recently_used_id = min(self.cache_dic, key=lambda x: self.cache_dic[x]['last_used'])
         table_name = least_recently_used_id[0]
         block_id = int(least_recently_used_id[1])
@@ -50,7 +51,7 @@ class SlottedPageCache():
 
         self.storage.write_blk(table_name, block_id, evicting_bytearray)
 
-        del self.cache_dic[evicting_block_id]
+        del self.cache_dic[(table_name, block_id)]
 
     def search_by_id(self, table_name: str, record_id: int):
         if not isinstance(table_name, str):
@@ -65,7 +66,7 @@ class SlottedPageCache():
             if key[0] == table_name:
                 records = self.cache_dic[key]['slotted_page'].records
                 for record in records:
-                    if record is not None and record.id == id:
+                    if record is not None and record.id == record_id:
                         self.cache_dic[key]['last_used'] = datetime.now()
                         return [record]
 
@@ -88,12 +89,12 @@ class SlottedPageCache():
 
         return None
 
-    def search_by_area_code(self, table_name: str, area_code: str):
+    def search_by_area_code(self, table_name: str, area_code: int, field_name: str):
         if not isinstance(table_name, str):
             raise TypeError("Table name must be str")
        
-        if not isinstance(area_code, str):
-            raise TypeError("area_code must be str")
+        if not isinstance(area_code, int):
+            raise TypeError("area_code must be int")
 
         keys = self.cache_dic.keys()
         all_records = []
@@ -102,7 +103,7 @@ class SlottedPageCache():
             if key[0] == table_name:
                 records = self.cache_dic[key]['slotted_page'].records
                 for record in records:
-                    if record is not None and record.phone.split("-")[0] == area_code:
+                    if record is not None and field_name == "area_code" and int(record.phone.split("-")[0]) == area_code:
                         all_records.append(record)
                         self.cache_dic[key]['last_used'] = datetime.now()
 
@@ -111,6 +112,8 @@ class SlottedPageCache():
     def available_slotted_page(self, table_name: str):
         if not isinstance(table_name, str):
             raise TypeError("Table name must be str")
+
+        keys = self.cache_dic.keys()
 
         for key in keys:
             if key[0] == table_name:
