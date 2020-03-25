@@ -127,7 +127,7 @@ class AVL_Tree(object):
 
         if not searchArea:
             if l: res += l
-            res.append(root.val)
+            res.append(root.data)
             if r: res += r
 
         else:
@@ -207,14 +207,18 @@ class SSTable:
             self.num_of_rec += 1
             return 0
         return -1
+
+
         
     def search_rec(self, key):
         '''
         fetches the TreeNode that pk maps to 
         returns the record within that node
         '''
-        node = self.records.searchNode(self.root, key)
-       
+        if not self.IMMUTABLE:
+            node = self.records.searchNode(self.root, key)
+        #TODO: binary search bytearray for key if IMMUTABLE
+        
         if node: 
             return node.data
         return node
@@ -224,8 +228,12 @@ class SSTable:
         fetches the TreeNodes are the area code maps to 
         returns the list of records with those nodes
         '''
-        nodes = self.records.getInOrder(self.root, True, area)
+        if not self.IMMUTABLE:
+            nodes = self.records.getInOrder(self.root, True, area)
+        #TODO: linear search bytearray for recs if IMMUTABLE 
+        
         return nodes
+
 
     
     def getKeyRange(self):

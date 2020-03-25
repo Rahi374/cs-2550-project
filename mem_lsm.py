@@ -71,7 +71,7 @@ class MemLSM():
         
         
         
-    def read_rec(self, tbl_name: str, rec: Record):
+    def read_rec(self, tbl_name: str, rec_id):
         """
         search for rec in pagetable
         and search for it in disk it necessary
@@ -82,7 +82,7 @@ class MemLSM():
             LRU = self.page_table[tbl_name]
             for i in range(len(LRU) - 1, -1, -1):
                 sst = LRU[i]
-                rec = sst.search_rec(rec.id)
+                rec = sst.search_rec(rec_id)
                 if rec:
                     return rec
 
@@ -129,8 +129,8 @@ if __name__ == '__main__':
         mem.write_rec('tbl2', Record(2, 'test', '401-222-3142'))
         mem.write_rec('tbl2', Record(3, 'test', '999-222-3142'))
         mem.write_rec('tbl2', Record(123, 'test', '999-111-0000'))
-
         mem.write_rec('tbl1', Record(101, 'test', '401-222-3142'))
+
 
         for x in mem.page_table.keys():
             print(x)
@@ -139,6 +139,9 @@ if __name__ == '__main__':
 
         print(mem.read_recs('tbl2', '999')) 
         print(mem.read_recs('tbl1', '401'))
+
+        print(mem.read_rec('tbl1', 123))
+        print(mem.read_rec('tbl2', 3))
         
         
 
