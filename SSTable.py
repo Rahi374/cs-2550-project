@@ -1,4 +1,5 @@
 import sys
+from record import Record 
 '''
 modified Treenode and AVL_Tree
 
@@ -110,7 +111,7 @@ class AVL_Tree(object):
   
         return self.getHeight(root.left) - self.getHeight(root.right) 
   
-    def getInOrder(self, root):
+    def getInOrder(self, root, searchArea = False, area = ''):
         '''
         return the in-order string
         used for printing and getting min an max key value
@@ -118,32 +119,54 @@ class AVL_Tree(object):
         if not root: 
             return []
 
-        sortedKeys = []
-        l = self.getInOrder(root.left) 
-        r = self.getInOrder(root.right)
+        res = []
+        l = self.getInOrder(root.left, searchArea, area) 
+        r = self.getInOrder(root.right, searchArea, area)
 
-        if l: sortedKeys += l
-        sortedKeys += [root.val]
-        if r: sortedKeys += r
-        
-        return sortedKeys
+        if not searchArea:
+            if l: res += l
+            res.append(root.val)
+            if r: res += r
 
-
-class SSKey:
-    def __init__(self, key: tuple):
-        self.key = key
-    
-    def __lt__(self, other):
-        if self.key[0] == other[0]:
-            return self.key[1] < other[1]
         else:
-            return self.key[0] < other[0]
-    
-    def __getitem__(self, ind):
-        return self.key[ind]
+            #retrive records by area code
+            if l: res += l
+            if root.data.phone.split('-')[0] == area:
+                res.append(root.data)
+            if r: res += r
+            
         
-    def __str__(self):
-        return str(self.key)
+        
+        return res
+
+    def searchNode(self, root: TreeNode, key):
+        '''
+        return the node with the key
+        '''
+        curr = root
+        while curr:
+            if curr.val == key:
+                return curr
+            if curr.val > key:
+                curr = curr.left
+            else:
+                curr = curr.right 
+            
+        return None
+
+
+# class SSKey:
+#     def __init__(self, key: tuple):
+#         self.key = key
+    
+#     def __lt__(self, other):
+#         return self.key[0] < other[0]
+    
+#     def __getitem__(self, ind):
+#         return self.key[ind]
+        
+#     def __str__(self):
+#         return str(self.key)
 
 
 class SSTable:
@@ -152,18 +175,44 @@ class SSTable:
         #use an AVL tree to keep key strings sorted
         self.records = AVL_Tree()
         self.root = None
+        self.num_of_rec = 0
         
         #key range used for merging
         self.lo = None
         self.hi = None
     
-    def add(self, tbl_name, key, record):
+    def add(self, rec: Record):
         '''
         add a write record
-        '''        
-        sskey = SSKey((tbl_name, key))
-        self.root = self.records.insert(self.root, sskey, record)
+        '''       
+        key = rec.id
+        node = self.records.searchNode(self.root, key)
+        if node:
+            node.data = rec
+            return 1
+        else:
+            self.root = self.records.insert(self.root, key, rec)
+            self.num_of_rec += 1
+            return 0
+        return -1
+    
         
+        
+    def search_rec(self, key):
+        '''
+        fetches the TreeNode that pk maps to 
+        returns the record within that node
+        '''
+        node = self.records.searchNode(self.root, key)
+        return node.data
+
+    def search_recs(self, area):
+        '''
+        fetches the TreeNodes are the area code maps to 
+        returns the list of records with those nodes
+        '''
+        nodes = self.records.getInOrder(self.root, True, area)
+        return nodes
 
     
     def getKeyRange(self):
@@ -174,21 +223,30 @@ class SSTable:
         sortedKeys = self.records.getInOrder(self.root)
         return (sortedKeys[0], sortedKeys[-1])
 
-class SSTable_Merger:
-    pass
-    
-
-
 
 if __name__ == '__main__':
     
     if len(sys.argv) == 2 and sys.argv[1] == 'test':
         sstable = SSTable()
-        sstable.add('abc', 12, 0000000)
-        sstable.add('abc', 13, 0000000)
-        sstable.add('aaa', 13, 0000000)
-        sstable.add('adc', 11, 0000000)
-        sstable.add('aaa', 1, 0000000)
+
+        sstable.add(Record(123, 'test', '401-222-3142'))
+        sstable.add(Record(122, 'test', '401-222-3142'))
+        sstable.add(Record(10, 'test', '412-222-3142'))
+        print(sstable.num_of_rec)
+
+        sstable.add(Record(13, 'test', '412-222-3142'))
+        print(sstable.num_of_rec)
+
+        sstable.add(Record(122, 'test', '333-222-3142'))
+        print(sstable.num_of_rec)
+
+        sstable.add(Record(100, 'test', '333-222-3142'))
+        
+        print(sstable.records.getInOrder(sstable.root))
+
+        print(sstable.search_recs('333'))
+        print(sstable.search_recs('412'))
+        
         for x in sstable.getKeyRange(): print(str(x))
     
 
