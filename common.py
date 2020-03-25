@@ -1,5 +1,8 @@
 from bitstring import BitArray
 from enum import Enum
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 RECORD_SIZE = 32
 
