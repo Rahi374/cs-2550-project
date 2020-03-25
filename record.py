@@ -1,7 +1,19 @@
 from common import *
 
 class Record():
-    def __init__(self, id: int, client_name: str, phone: str):
+    # id: int, client_name: str, phone: str, ba: bytearray
+    def __init__(self, id=None, client_name=None, phone=None, ba=None):
+        if isinstance(ba, bytearray):
+            self.id = ba[0] + (ba[1] << 8) + (ba[2] << 16) + (ba[3] << 24)
+            self.client_name = ba[4:20].decode("ascii")
+            self.phone = ba[20:32].decode("ascii")
+            if self.id == 0 and self.client_name[0] == "\0" and self.phone[0] == "\0":
+                raise Exception("client is None")
+
+            self.client_name = self.client_name.strip('\0')
+            self.phone = self.phone.strip('\0')
+            return
+
         if not isinstance(id, int):
             raise TypeError("record id must be int") 
         if not isinstance(client_name, str):
