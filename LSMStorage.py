@@ -70,16 +70,18 @@ class LSMStorage():
             self.L1_lock_hm[table_name] = threading.Lock()
             self.L2_lock_hm[table_name] = threading.Lock()
             self.create_table_structure(table_name)
-            self.start_compaction_threads(table_name)
+            self.start_compaction_threads(table_name) #TODO re-enable this
         return MemTable(self.blk_size, self.blocks_per_ss ,table_name)
 
     def push_memtable(self, memtable):
+        print("in order records being pushed from memtable")
+        print(memtable.get_in_order_records())
         table_name = memtable.tbl_name
         self.L0_lock_hm[table_name].acquire()
         all_records = memtable.get_in_order_records()
         lower, upper = all_records[0], all_records[-1]
         self.write_records_to_level_SST(all_records, memtable.tbl_name, lower, upper, "L0")
-        self.metadata_counts[table_name+"L0"] = metadata_counts[table_name+"L0"] + 1 
+        self.metadata_counts[table_name+"L0"] = self.metadata_counts[table_name+"L0"] + 1 
         self.L0_lock_hm[table_name].release()
         if self.metadata_counts[table_name+"L0"] == 4: #compact L0 if no more room
             if self.metadata_counts[table_name+"L1"] > 6:#if L1 would not be able to take L0, compact it
@@ -133,9 +135,11 @@ class LSMStorage():
         return byte_arr
 
     def write_records_to_level_SST(self, records, table_name, lower, upper, level):
+        if len(records) == 0:
+            return
         self.remove_duplicate_level_entries(records, table_name, level)
-        records_per_block = self.blk_size / get_size_of_records()
-        dir_path = "storage/"+table_name+"/"+level+"/SST"+metadata_counts[table_name+level]
+        records_per_block = math.floor(self.blk_size / get_size_of_records())
+        dir_path = "storage/"+table_name+"/"+level+"/SST"+str(self.metadata_counts[table_name+level])
         self.metadata_ranges[dir_path] = (lower, upper)
         os.mkdir(dir_path)
         records_to_write = len(records)
@@ -144,14 +148,20 @@ class LSMStorage():
         while records_to_write > 0:
             if records_to_write < records_per_block:
                 recs_to_write = records[i:i+records_to_write]
-                f = open(dir_path+"/"+str(c)+"_"+str(records_to_write))
-                f.write(get_byte_array(recs_to_write))
+                print("writing records partial:")
+                print(recs_to_write)
+                f = open(dir_path+"/"+str(c)+"_"+str(records_to_write), "wb+")
+                f.write(self.get_byte_array_of_records(recs_to_write))
                 f.close()
                 records_to_write = 0
             else:
                 recs_to_write = records[i:i+records_per_block]
-                f = open(dir_path+"/"+str(c)+"_"+str(records_per_block))
-                f.write(get_byte_array(recs_to_write))
+                print("writing records:")
+                print(recs_to_write)
+                print("\n\n\n")
+                print(self.get_byte_array_of_records(recs_to_write))
+                f = open(dir_path+"/"+str(c)+"_"+str(records_per_block), "wb+")
+                f.write(self.get_byte_array_of_records(recs_to_write))
                 f.close()
                 records_to_write -= records_per_block
                 c += 1
@@ -163,7 +173,7 @@ class LSMStorage():
         ss_tables = os.listdir(dir_path)
         rec, ss = None, -1
         for s in ss_tables:
-            lower, upper = metadata_ranges[dir_path+"/"+s]
+            lower, upper = self.metadata_ranges[dir_path+"/"+s]
             if lower < record_id and upper > record_id:
                 rec, ss = check_sst_for_record(record_id, table_name, level, sst_num)
                 if ss != -1:
@@ -192,6 +202,8 @@ class LSMStorage():
 
 
     def remove_duplicate_level_entries(self, records, table_name, level):
+        print("\n\n***\n\n")
+        print(records)
         rec_hm = {}
         for r in records:
             rec_hm[r.id] = r
@@ -266,21 +278,34 @@ class LSMStorage():
         dir_of_L0 = "storage/"+table_name+"/L0"
         for sst in os.listdir(dir_of_L0):
             for b in os.listdir(dir_of_L0+"/"+sst):
-                f = open(dir_of_L0+"/"+sst+"/"+b, "w+b")
+                print("\n\n**************************")
+                file_name = dir_of_L0+"/"+sst+"/"+b
+                print(file_name)
+                f = open(file_name, "wb+")
                 b_arr = bytearray(f.read())
-                num_recs = b.split("_")[1]            
+                num_recs = int(b.split("_")[1])
                 rec_num = 0
+                print(b_arr)
+                print("**************************")
+                print("num_recs: "+str(num_recs))
                 for r in range(num_recs):
                     start_of_rec = rec_num * get_size_of_records() 
-                    rec_id = int(b_arr[start_of_rec:start_of_rec+4])
-                    rec_name = str(b_arr[start_of_rec+4:start_of_rec+20])
-                    rec_phone = str(b_arr[start_of_rec+20:start_of_rec+32])
+                    rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
+                    print("**************************")
+                    print(rec_id)
+                    print("**************************")
+                    rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
+                    print(rec_name)
+                    print("**************************")
+                    rec_phone = b_arr[start_of_rec+20:start_of_rec+32].decode()
+                    print(rec_phone)
+                    print("**************************")
                     list_of_records.append(Record(rec_id, rec_name, rec_phone))
                     rec_num += 1
                 f.close()
                 os.remove(dir_of_L0+"/"+sst+"/"+b)
 
-            os.remove(dir_of_L0+"/"+sst)
+            os.rmdir(dir_of_L0+"/"+sst)
         list_of_records = [r for r in list_of_records if r.id != -2]
         list_of_records.sort(key=lambda x: x.id)
         self.write_L0_records_to_L1(list_of_records, table_name)
@@ -303,19 +328,19 @@ class LSMStorage():
             for b in os.listdir(dir_of_L1+"/"+sst):
                 f = open(dir_of_L1+"/"+sst+"/"+b, "w+b")
                 b_arr = bytearray(f.read())
-                num_recs = b.split("_")[1]            
+                num_recs = int(b.split("_")[1])
                 rec_num = 0
                 for r in range(num_recs):
                     start_of_rec = rec_num * get_size_of_records() 
-                    rec_id = int(b_arr[start_of_rec:start_of_rec+4])
-                    rec_name = str(b_arr[start_of_rec+4:start_of_rec+20])
-                    rec_phone = str(b_arr[start_of_rec+20:start_of_rec+32])
+                    rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
+                    rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
+                    rec_phone = b_arr[start_of_rec+20:start_of_rec+32].decode()
                     list_of_records.append(Record(rec_id, rec_name, rec_phone))
                     rec_num += 1
                 f.close()
                 os.remove(dir_of_L1+"/"+sst+"/"+b)
 
-            os.remove(dir_of_L1+"/"+sst)
+            os.rmdir(dir_of_L1+"/"+sst)
         list_of_records = [r for r in list_of_records if r.id != -2]
         list_of_records.sort(key=lambda x: x.id)
         self.write_L1_records_to_L2(list_of_records, table_name)
@@ -323,33 +348,35 @@ class LSMStorage():
         return
     
 
-        def write_L1_records_to_L2(self, recs, table_name):
-            self.remove_duplicate_level_entries(recs, table_name, "L2")
-            list_of_records = []
-            dir_of_L2 = "storage/"+table_name+"/L2"
-            for sst in os.listdir(dir_of_L2):
-                for b in os.listdir(dir_of_L2+"/"+sst):
-                    f = open(dir_of_L2+"/"+sst+"/"+b, "w+b")
-                    b_arr = bytearray(f.read())
-                    num_recs = b.split("_")[1]            
-                    rec_num = 0
-                    for r in range(num_recs):
-                        start_of_rec = rec_num * get_size_of_records() 
-                        rec_id = int(b_arr[start_of_rec:start_of_rec+4])
-                        rec_name = str(b_arr[start_of_rec+4:start_of_rec+20])
-                        rec_phone = str(b_arr[start_of_rec+20:start_of_rec+32])
-                        list_of_records.append(Record(rec_id, rec_name, rec_phone))
-                        rec_num += 1
-                    f.close()
-                    os.remove(dir_of_L2+"/"+sst+"/"+b)
-
-                os.remove(dir_of_L2+"/"+sst)
-            list_of_records = [r for r in list_of_records if r.id != -2]
-            for rec in recs:
-                list_of_records.append(rec)
-            list_of_records.sort(key=lambda x: x.id)
-            self.write_records_to_level_SST(list_of_records, table_name, list_of_records[0].id, list_of_records[-1].id, "L2")
+    def write_L1_records_to_L2(self, recs, table_name):
+        if len(recs) == 0:
             return
+        self.remove_duplicate_level_entries(recs, table_name, "L2")
+        list_of_records = []
+        dir_of_L2 = "storage/"+table_name+"/L2"
+        for sst in os.listdir(dir_of_L2):
+            for b in os.listdir(dir_of_L2+"/"+sst):
+                f = open(dir_of_L2+"/"+sst+"/"+b, "w+b")
+                b_arr = bytearray(f.read())
+                num_recs = b.split("_")[1]            
+                rec_num = 0
+                for r in range(num_recs):
+                    start_of_rec = rec_num * get_size_of_records() 
+                    rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byterder="little", signed=True)
+                    rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
+                    rec_phone = b_arr[start_of_rec+20:start_of_rec+32].decode()
+                    list_of_records.append(Record(rec_id, rec_name, rec_phone))
+                    rec_num += 1
+                f.close()
+                os.remove(dir_of_L2+"/"+sst+"/"+b)
+
+            os.remove(dir_of_L2+"/"+sst)
+        list_of_records = [r for r in list_of_records if r.id != -2]
+        for rec in recs:
+            list_of_records.append(rec)
+        list_of_records.sort(key=lambda x: x.id)
+        self.write_records_to_level_SST(list_of_records, table_name, list_of_records[0].id, list_of_records[-1].id, "L2")
+        return
 
 
 def get_size_of_records():
@@ -385,6 +412,7 @@ class MemTable(object):
         return self.ss_table.getInOrder()
 
     def is_full(self):
+        print(self.ss_table.get_num_records)
         return self.ss_table.get_num_records() == self.max_records
 
 

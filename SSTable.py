@@ -171,7 +171,6 @@ class AVL_Tree(object):
 
 class SSTable:
     
-    num_of_recs = None
     def __init__(self):
         #use an AVL tree to keep key strings sorted
         self.records = AVL_Tree()
@@ -198,7 +197,7 @@ class SSTable:
         return -1
    
     def get_num_records(self):
-        return self.num_of_recs
+        return self.num_of_rec
 
     def getInOrder(self):
         return self.records.getInOrder(self.root)
