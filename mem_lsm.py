@@ -174,8 +174,12 @@ class MemLSM():
     
 
     def del_tbl(self, tbl_name:str):
-        #TODO: implement
-        pass    
+        #remove from memtbl if exists
+        self.memtbls.pop(tbl_name, None)
+        #remove from LRU if exists
+        self.page_table.pop(tbl_name, None)
+        #remove from storage
+        self.storage.delete_table(tbl_name)
 
     def read_recs(self, tbl_name: str, area: str):
         """
@@ -239,7 +243,6 @@ if __name__ == '__main__':
         ss = mem.memtbls['tbl2'].ss_table
         print('client: ', ss)
 
-
         #test read rec 
         mem.write_rec('tbl3', Record(123, 'test', '123-222-3142'))
         mem.write_rec('tbl3', Record(111, 'test', '401-222-3142'))
@@ -276,12 +279,24 @@ if __name__ == '__main__':
 
         #test read_recs
         print('tbl3 memtable: ', mem.memtbls['tbl3'].ss_table)
-        #print('result: ', mem.read_recs('tbl3', 999))
+        print('result: ', mem.read_recs('tbl3', 999))
         mem._print_pt()
 
         print("**\n\n**")
-        print('result: ', mem.read_recs('tbl2', 401))
+        print('result2: ', mem.read_recs('tbl2', 401))
         mem._print_pt()
+        
+        
+        #test delete table
+        mem.del_tbl('tbl3')
+        mem._print_pt()
+        print('memtbl: ', mem.memtbls)
+        # print('result after del tbl3: ', mem.read_recs('tbl3', 999))
+
+        mem.del_tbl('tbl2')
+        mem._print_pt()
+        print('memtbl: ', mem.memtbls)
+        print('result after del tbl3: ', mem.read_recs('tbl2', 401))
         
         
         
