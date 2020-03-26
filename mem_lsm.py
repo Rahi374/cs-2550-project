@@ -16,6 +16,7 @@ from LSMStorage import LSMStorage as LSM
 from SSTable import SSTable as SST
 from record import Record
 from core import ORG
+from logger import Logger 
 import sys
 
 
@@ -95,6 +96,12 @@ class MemLSM():
             memtbl.delete_record(rec_id)
         else:
             memtbl.add_record(rec)
+
+        #Logging:
+        if not is_del:
+            Logger.log(f'Written: {tbl_name} {rec.id} {rec.client_name} {rec.phone}')
+        else:
+            Logger.log(f'Erased: {tbl_name} {rec.id}')
     
     def _level_read_rec(self, level: list, rec_id):
         rec = None
@@ -123,11 +130,17 @@ class MemLSM():
 
     def _check_evict(self, tbl_name, level, ba):
         l = self.page_table[tbl_name][level]
+        out = None
         #evict if LRU is full
         if len(l) == self.LRU_size:
-            l.pop(0)
+            out = l.pop(0)
+            
         #append to the end
         l.append(ba)
+
+        #Logging
+        Logger.log(f'SWAP IN L-{level} {tbl_name}{abs(ba[0].id)}-{tbl_name}{abs(ba[0].id)}')
+        Logger.log(f'SWAP OUT L-{level} {tbl_name}{abs(out[0].id)}-{tbl_name}{abs(out[0].id)}')
     
     def _check_evicts(self, tbl_name, bas):
         for i in range(len(bas)):
@@ -189,6 +202,9 @@ class MemLSM():
             return None
         #update the page table
         self._check_evict(tbl_name, level, ba)
+
+        #Logging:
+        Logger.log(f'Read: {tbl_name} {rec.id} {rec.client_name} {rec.phone}')
         return rec
 
     def read_recs(self, tbl_name: str, area: str):
@@ -229,6 +245,10 @@ class MemLSM():
         #update the page table
         self._check_evicts(tbl_name, bas)
         
+        #Logging
+        for rec in found:
+            Logger.log(f'MRead: {tbl_name} {rec.id} {rec.client_name} {rec.phone}')
+
         return found
 
     def delete_table(self, tbl_name: str):
