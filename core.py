@@ -39,6 +39,8 @@ class Core():
             print(f"=> {ret}")
         self.mem.print_cache()
         self.mem.flush()
+        if disk_org == ORG.LSM:
+            self.storage.kill_all_compaction_threads()
 
     def exec_inst(self, inst: Instruction):
         if isinstance(inst, str):

@@ -16,7 +16,7 @@ class LSMStorage():
     L2_lock_hm = {}
     compaction_thread_hm = {}
     thread_should_run = {}
-    
+
 
     def __init__(self, block_size, blocks_per_SS):
         self.blk_size = block_size
@@ -41,6 +41,10 @@ class LSMStorage():
 
         return
 
+    def kill_all_compaction_threads(self):
+        print("compaction threads are being killed, this may take up to 10 seconds")
+        for thread_key in self.thread_should_run:
+            self.thread_should_run[thread_key] = False
 
     def get_record(self, record_id, table_name):
         table_exists = self.table_exists(table_name)
@@ -121,7 +125,7 @@ class LSMStorage():
             self.thread_should_run[table_name] = True
             self.start_compaction_threads(table_name) #TODO re-enable this
         return MemTable(self.blk_size, self.blocks_per_ss ,table_name)
-        
+
 
     def push_memtable(self, memtable):
         table_name = memtable.tbl_name
@@ -218,7 +222,7 @@ class LSMStorage():
                 c += 1
                 i += records_per_block
 
-       
+
     def check_level_for_rec(self, record_id, table_name, level):
         dir_path = "storage/"+table_name+"/"+level
         ss_tables = os.listdir(dir_path)
@@ -285,13 +289,13 @@ class LSMStorage():
         for r in range(num_recs):
             start_of_rec = r * get_size_of_records() 
             rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
-            if rec_id in rec_hm or -1*rec_id in hm:
+            if rec_id in rec_hm or -1*rec_id in rec_hm:
                 b_arr = b_arr[0:start_of_rec] + Record(-1*rec_id,"1","1").to_bytearray() + b_arr[start_of_rec+32:]
         f.close()
         f = open(dir_path, "wb+")
         f.write(b_arr)
         f.close()
-        
+
 
     def start_compaction_threads(self, table_name):
         L0_comp_thread = threading.Thread(target=self.start_L0Compaction, args=(table_name,))
@@ -372,7 +376,7 @@ class LSMStorage():
         self.remove_duplicate_level_entries(recs, table_name, "L1")
         lower, upper = recs[0].id, recs[-1].id
         self.write_records_to_level_SST(recs, table_name, lower, upper, "L1")
-        
+
 
     def compact_L1(self, table_name):
         list_of_records = []
@@ -399,7 +403,7 @@ class LSMStorage():
         self.write_L1_records_to_L2(list_of_records, table_name)
         self.metadata_counts[table_name+"L1"] = 0
         return
-    
+
 
     def write_L1_records_to_L2(self, recs, table_name):
         if len(recs) == 0:
@@ -441,7 +445,7 @@ class MemTable(object):
     blocks_per_ss = None
     max_records = None
     num_records = 0
-    
+
 
     def __init__(self, block_size, blocks_per_SS, table_name):
         self.blk_size = block_size
