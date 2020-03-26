@@ -58,4 +58,8 @@ class Record():
                self.client_name == other.client_name and \
                self.phone == other.phone
 
-        
+    def to_log(self):
+        return f"({self.id}, {self.client_name}, {self.phone})"
+
+    def to_log_done(self):
+        return f"{self.id}, {self.client_name}, {self.phone}"
