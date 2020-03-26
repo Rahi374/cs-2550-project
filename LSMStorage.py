@@ -110,7 +110,7 @@ class LSMStorage():
         table_name = memtable.tbl_name
         self.L0_lock_hm[table_name].acquire()
         all_records = memtable.get_in_order_records()
-        lower, upper = all_records[0], all_records[-1]
+        lower, upper = all_records[0].id, all_records[-1].id
         self.write_records_to_level_SST(all_records, memtable.tbl_name, lower, upper, "L0")
         self.metadata_counts[table_name+"L0"] = self.metadata_counts[table_name+"L0"] + 1 
         self.L0_lock_hm[table_name].release()
