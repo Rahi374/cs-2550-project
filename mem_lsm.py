@@ -19,7 +19,7 @@ from core import ORG
 from logger import Logger 
 import common
 import sys
-
+import math
 
 class MemLSM():
 
@@ -119,7 +119,7 @@ class MemLSM():
             
     def _ba_2_recs(self, ba):
         res = []
-        for i in range(len(ba) / common.RECORD_SIZE):
+        for i in range(math.floor(len(ba) / common.RECORD_SIZE)):
             rec = Record(ba = ba[i * common.RECORD_SIZE: (i + 1) * common.RECORD_SIZE])
             res.append(rec)
         return res

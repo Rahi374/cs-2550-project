@@ -43,8 +43,8 @@ class Core():
             except Exception as e:
                 ret = e
             print(f"=> {ret}")
-        self.mem.print_cache()
-        self.mem.flush()
+        #self.mem.print_cache()
+        #self.mem.flush()
         done = time.time()
         print(f"Time taken: {done - start}")
         if self.disk_org == ORG.LSM:
