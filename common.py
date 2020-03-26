@@ -25,6 +25,14 @@ ACTION_WORDS = {
     ACTION.DELETE_TABLE: "Delete table"
 }
 
+ACTION_CODES = {
+    ACTION.RETRIEVE_BY_ID: "R",
+    ACTION.RETRIEVE_BY_AREA_CODE: "M",
+    ACTION.WRITE_RECORD: "W",
+    ACTION.DELETE_RECORD: "E",
+    ACTION.DELETE_TABLE: "D"
+}
+
 def pad_bits(ba: BitArray, target_len: int):
     l = len(ba)
     if l % 8 == 0:
