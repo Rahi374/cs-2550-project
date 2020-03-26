@@ -25,6 +25,9 @@ class Instruction():
 
     def to_log(self):
         data = self.get_data_for_str()
+        if self.action == ACTION.WRITE_RECORD:
+            return f"{ACTION_CODES[self.action]} {self.table_name} {data.to_log()}"
+
         if data is not None:
             return f"{ACTION_CODES[self.action]} {self.table_name} {data}"
 
