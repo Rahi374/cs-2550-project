@@ -197,7 +197,7 @@ class SSTable:
         '''
         add a write record
         '''       
-        key = rec.id
+        key = abs(rec.id)
         node = self.records.searchNode(self.root, key)
         if node:
             node.data = rec
