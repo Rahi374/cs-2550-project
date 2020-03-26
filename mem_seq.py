@@ -15,6 +15,7 @@
 from storage import Storage
 from common import ORG
 import heapq as pq
+from logger import Logger
 import os
 from datetime import datetime
 from slotted_page_cache import *
@@ -75,6 +76,7 @@ class MemSeq():
         new_block_id = self.__find_next_block_id(table)
         new_slotted_page = SlottedPage(block_size = self.block_size)
         new_slotted_page.insert(rec)
+        Logger.log(f"CREATE T-{table} P-{new_block_id}")
         self.cache.cache(table, new_block_id, new_slotted_page) 
         
 
