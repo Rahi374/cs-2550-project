@@ -65,14 +65,14 @@ class LSMStorage():
         l0_list = []
         l1_list = []
         l2_list = []
-        get_matching_area_code_byte_arrays(l0_list, rec_list, table_name, area_code, "L0", hm_keys_found)
-        get_matching_area_code_byte_arrays(l1_list, rec_list, table_name, area_code, "L1", hm_keys_found)
-        get_matching_area_code_byte_arrays(l2_list, rec_list, table_name, area_code, "L2", hm_keys_found)
+        self.get_matching_area_code_byte_arrays(l0_list, rec_list, table_name, area_code, "L0", hm_keys_found)
+        self.get_matching_area_code_byte_arrays(l1_list, rec_list, table_name, area_code, "L1", hm_keys_found)
+        self.get_matching_area_code_byte_arrays(l2_list, rec_list, table_name, area_code, "L2", hm_keys_found)
         list_of_bytearrays_lists = [l0_list, l1_list, l2_list]
-        return list_of_bytearrays, rec_list
+        return list_of_bytearrays_lists, rec_list
 
     def get_matching_area_code_byte_arrays(self, list_of_bytearrays, rec_list, table_name, area_code, level, hm_keys_found):
-        level_dir = "storage/"+level
+        level_dir = "storage/"+table_name+"/"+level
         for sst in os.listdir(level_dir):
             sst_dir = level_dir + "/" + sst
             if self.sst_contains_record_matching_area_code(sst_dir, area_code, rec_list, hm_keys_found):
@@ -90,12 +90,12 @@ class LSMStorage():
                 rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
                 rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
                 rec_phone_num = b_arr[start_of_rec+20:start_of_rec+32].decode()
-                rec_area_code = phone_num.split("-")[0]
+                rec_area_code = rec_phone_num.split("-")[0]
                 if rec_area_code == area_code:
                     match_found = True
                     if rec_id not in hm_keys_found:
                         hm_keys_found.add(rec_id)
-                        ret_rec = Record(rec_id, rec_name, rec_phone)
+                        ret_rec = Record(rec_id, rec_name, rec_phone_num)
                         rec_list.append(new_rec)
 
 
