@@ -14,6 +14,7 @@ class LSMStorage():
     L0_lock_hm = {}
     L1_lock_hm = {}
     L2_lock_hm = {}
+    level_to_lock_hm = {}
     compaction_thread_hm = {}
     thread_should_run = {}
 
@@ -21,6 +22,9 @@ class LSMStorage():
     def __init__(self, block_size, blocks_per_SS):
         self.blk_size = block_size
         self.blocks_per_ss = blocks_per_SS
+        self.level_to_lock_hm["L0"] = self.L0_lock_hm
+        self.level_to_lock_hm["L1"] = self.L1_lock_hm
+        self.level_to_lock_hm["L2"] = self.L2_lock_hm
         #delete old directory if exists
         if os.path.isdir('storage'):
             try:
@@ -226,6 +230,8 @@ class LSMStorage():
 
 
     def check_level_for_rec(self, record_id, table_name, level):
+        level_lock = self.level_to_lock_hm[level][table_name]
+        level_lock.acquire()
         dir_path = "storage/"+table_name+"/"+level
         ss_tables = os.listdir(dir_path)
         rec, ss = None, -1
@@ -234,7 +240,9 @@ class LSMStorage():
             if lower <= int(record_id) and upper >= int(record_id):
                 rec, ss = self.check_sst_for_record(record_id, table_name, level, s)
                 if ss != -1:
+                    level_lock.release()
                     return rec, ss
+        level_lock.release()
         return rec, ss
 
     def check_sst_for_record(self, record_id, table_name, level, sst):
