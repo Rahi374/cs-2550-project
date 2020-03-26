@@ -5,6 +5,7 @@ import time
 import math
 from record import *
 from SSTable import *
+from logger import Logger
 
 class LSMStorage():
     blk_size = None
