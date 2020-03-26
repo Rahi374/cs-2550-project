@@ -55,11 +55,14 @@ class MemLSM():
         for r in recs:
             if r.id in pks:
                 continue
-
+            
             if int(r.phone[:3]) == int(area):
                 pks.add(r.id)
                 found.append(r)
             #print(found)
+
+    def delete_record(self, tbl_name: str, rec_id):
+        write_rec(self, tbl_name, None, True, rec_id)
 
     def write_rec(self, tbl_name: str, rec: Record = None, is_del = False, rec_id = None):
         '''
@@ -103,8 +106,6 @@ class MemLSM():
             self._get_area_recs(self._ba_2_recs(level[i]), area, pks, found)
         # print('level_read_recs: ', found)
             
-
-
     def _ba_2_recs(self, ba):
         res = []
         for i in range(8):
@@ -170,7 +171,8 @@ class MemLSM():
 
         #search in storage
         rec, ba, level = self.storage.get_record(rec_id, tbl_name)
-        if ba == -1:
+        #check if not found or deleted
+        if ba == -1 or int(rec.phone):
             return rec
         #update the page table
         self._check_evict(tbl_name, level, ba)
@@ -230,3 +232,29 @@ class MemLSM():
 
     def print_cache(self):
         print("LSM cache")
+
+if __name__ == '__main__':
+    #test delete record
+    mem = MemLSM(LSM(32, 4))
+    mem.write_rec('tbl1', Record(1, 'name1', '111-222-3333'))
+    mem.write_rec('tbl1', Record(2, 'name2', '111-222-3333'))
+    mem.write_rec('tbl1', Record(3, 'name3', '111-222-3333'))
+    mem.write_rec('tbl1', Record(4, 'name1', '111-222-3333'))
+    mem.write_rec('tbl1', Record(5, 'name1', '222-222-3333'))
+    mem.write_rec('tbl1', Record(6, 'name1', '444-222-3333'))
+    mem.write_rec('tbl1', Record(7, 'name1', '333-222-3333'))
+    mem.write_rec('tbl1', Record(8, 'name1', '999-222-3333'))
+
+
+    mem.write_rec('tbl2', Record(1, 'name1', '111-222-3333'))
+    mem.write_rec('tbl2', Record(2, 'name2', '111-222-3333'))
+    mem.write_rec('tbl2', Record(3, 'name3', '111-222-3333'))
+    mem.write_rec('tbl2', Record(4, 'name1', '111-222-3333'))
+    mem.write_rec('tbl2', Record(5, 'name1', '222-222-3333'))
+    mem.write_rec('tbl2', Record(6, 'name1', '444-222-3333'))
+    mem.write_rec('tbl2', Record(7, 'name1', '333-222-3333'))
+    mem.write_rec('tbl2', Record(8, 'name1', '999-222-3333'))
+    mem.write_rec('tbl2', Record(5, 'name1', '999-222-3333'))
+
+    print(mem.read_rec('tbl2', 5))
+
