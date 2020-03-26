@@ -21,13 +21,14 @@ import sys
 
 class MemLSM():
 
-    def __init__(self, SS_per_LRU = 4, block_size = 64, blocks_per_SS = 4):
+    def __init__(self, SS_per_LRU = 4, block_size = 64, blocks_per_SS = 4, LRU_size = 3):
         self.SS_per_LRU = SS_per_LRU
         self.num_of_memtbls = 0
         
         self.storage = LSM(block_size, blocks_per_SS)  
         self.memtbls = {}
         self.page_table = {}
+        self.LRU_size = LRU_size
 
     def _bsearch(self, recs: list, key):
         if not recs:
@@ -44,6 +45,8 @@ class MemLSM():
             elif m_key > key:
                 r = m - 1
             else:
+                if recs[m].id < 0:
+                    return -1
                 return recs[m]
             
         return 0
@@ -61,7 +64,6 @@ class MemLSM():
         else:
             memtbl = self.memtbls[tbl_name]
 
-        
         #flush if necessary 
         # print('memtbl', memtbl)
         if memtbl.is_full():
@@ -73,16 +75,39 @@ class MemLSM():
     
     def _level_read_rec(self, level: list, rec_id):
         for i in range(len(level)):
-            pass
+            rec = self._bsearch(level[i])
+            if not rec == -1:
+                #adjust the LRU sequence
+                ba = level.pop(i)
+                level.append(ba)
+                return rec
+        return -1
 
     def _ba_2_recs(self, ba):
         res = []
         for i in range(8):
             rec = Record(ba = ba[i * 32: (i + 1) * 32])
-        res.append(rec)
+            res.append(rec)
         return res
 
+    def _check_evict(self, tbl_name, level, ba):
+        l = self.page_table[tbl_name][level]
+        #evict if LRU is full
+        if len(l) == self.LRU_size:
+            l.pop(0)
+        #append to the end
+        l.append(ba)
         
+    def _print_pt(self):
+        print()
+        for x in self.page_table:
+            print(x + ':')
+            LRU = self.page_table[x]
+            for i in range(len(LRU)):
+                print('\tlevel ' + str(i) + ':')
+                for ba in LRU[i]:
+                    print('\t\t' + str(self._ba_2_recs(ba)))
+
     def read_rec(self, tbl_name: str, rec_id):
         '''
         search for rec in memtbl (most recent), and then in page_table
@@ -93,22 +118,34 @@ class MemLSM():
             memtbl = self.memtbls[tbl_name]
             recs = memtbl.get_in_order_records()
             # print(recs)
-            res = self._bsearch(recs, rec_id)
-            if res:
-                return res
+            rec = self._bsearch(recs, rec_id)
+            if rec:
+                return rec
         
         #search in LRU
-
-        # #create LRU if necessary 
-        # if tbl_name not in self.page_table:
-        #     self.page_table[tbl_name] = [[], [], []] #L0, L1, L2
-        # LRU = self.page_table[tbl_name]
+        LRU = None
+        if tbl_name not in self.page_table:
+            #create LRU if necessary 
+            self.page_table[tbl_name] = [[], [], []] #L0, L1, L2
+            LRU = self.page_table[tbl_name]
+        else:
+            LRU = self.page_table[tbl_name]
+            rec = self._level_read_rec(LRU[0], rec_id)
+            if not rec == -1: 
+                return rec
+            rec = self._level_read_rec(LRU[1], rec_id)
+            if not rec == -1: 
+                return rec
+            rec = self._level_read_rec(LRU[2], rec_id)
+            if not rec == -1:
+                return rec
 
         #search in storage
-        rec = self.storage.get_record(rec_id, tbl_name)
+        rec, ba, level = self.storage.get_record(rec_id, tbl_name)
+        self._check_evict(tbl_name, level, ba)
+        return rec
 
-
-        return -1
+    
 
     def del_tbl(self, tbl_name:str):
         #TODO: implement
@@ -119,21 +156,18 @@ class MemLSM():
         search for rec in pagetable
         and search for it in disk it necessary
         # """ 
+        recs = []
+        pks = set()
+        #search in memtbl
+        if tbl_name in self.memtbls:
+            memtbl = self.memtbls[tbl_name]
+            recs = memtbl.get_in_order_records()
+            # print(recs)
+            rec = self._bsearch(recs, rec_id)
+            if rec:
+                return rec
+            
 
-        # #iterate through LRU to find that stt, and records
-        # recs = set()
-        # pks = set() #store the existing primary keys to prevent duplicate reads
-        # if tbl_name in self.page_table:
-        #     LRU = self.page_table[tbl_name]
-        #     for i in range(len(LRU) - 1, -1, -1):
-        #         sst = LRU[i]
-        #         tmp = set(sst.search_recs(area))
-        #         for x in tmp:
-        #             if x.id in pks:
-        #                 tmp.remove(x)
-        #             else:
-        #                 pks.add(x.id)
-        #         recs |= tmp
 
 
         #TODO: get the recs from disk
@@ -174,7 +208,7 @@ if __name__ == '__main__':
         mem.write_rec('tbl3', Record(1, 'test', '123-222-3142'))
         mem.write_rec('tbl3', Record(2, 'test', '401-222-1111'))
         mem.write_rec('tbl3', Record(3, 'test', '999-222-3142'))
-        mem.write_rec('tbl3', Record(3, 'test2', '999-111-3142'))
+        mem.write_rec('tbl3', Record(3, 'test2', '999-111-3333'))
         mem.write_rec('tbl3', Record(122, 'test', '999-111-0000'))
 
         mem.write_rec('tbl3', Record(10, 'test', '999-111-4444'))
@@ -187,7 +221,10 @@ if __name__ == '__main__':
         mem.write_rec('tbl3', Record(6, 'test', '999-222-3142'))
         
         print(mem.read_rec('tbl3', 3))
+        mem._print_pt()
         
+
+    
 
 
 

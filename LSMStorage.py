@@ -44,6 +44,8 @@ class LSMStorage():
 
     def get_record(self, record_id, table_name):
         table_exists = self.check_if_table_exists(table_name)
+        level = 0
+
         if not table_exists:
             print("no table")
             return -1
@@ -54,10 +56,10 @@ class LSMStorage():
                 if ss == -1:
                     rec, ss = self.check_level_for_rec(record_id, table_name, "L2")
                 else:
-                    return rec, ss
+                    return rec, ss, 1
             else:
-                return rec, ss
-            return rec, ss
+                return rec, ss, 0
+            return rec, ss, 2
 
     def get_records(self, area_code, table_name, hm_keys_found):
         l0_list = []
