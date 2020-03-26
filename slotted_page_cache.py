@@ -1,5 +1,6 @@
 from datetime import datetime
 from common import *
+from logger import *
 from storage import *
 from slotted_page import *
 from record import *
@@ -36,6 +37,7 @@ class SlottedPageCache():
                 'slotted_page': slotted_page,
                 'last_used': datetime.now()
         }
+        Logger.log(f"SWAP IN T-{table_name} P-{block_id}")
 
     def can_add(self):
         return len(self.cache_dic) + 1 <= self.MAX_NUM_BLOCKS
@@ -50,6 +52,7 @@ class SlottedPageCache():
         self.storage.write_blk(table_name, block_id, evicting_bytearray)
 
         del self.cache_dic[(table_name, block_id)]
+        Logger.log(f"SWAP OUT T-{table_name} P-{block_id}")
 
     def search_by_id(self, table_name: str, record_id: int):
         if not isinstance(table_name, str):
@@ -117,7 +120,6 @@ class SlottedPageCache():
             if key[0] == table_name:
                 if self.cache_dic[key]['slotted_page'].has_space():
                     return key
-
 
         return None
 
