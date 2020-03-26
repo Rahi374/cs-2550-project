@@ -97,11 +97,6 @@ class MemLSM():
         else:
             memtbl.add_record(rec)
 
-        #Logging:
-        if not is_del:
-            Logger.log(f'Written: {tbl_name} {rec.id} {rec.client_name} {rec.phone}')
-        else:
-            Logger.log(f'Erased: {tbl_name} {rec.id}')
     
     def _level_read_rec(self, level: list, rec_id):
         rec = None
@@ -138,9 +133,13 @@ class MemLSM():
         #append to the end
         l.append(ba)
 
+        ba = self._ba_2_recs(ba)
+        out = self._ba_2_recs(out)
         #Logging
-        Logger.log(f'SWAP IN L-{level} {tbl_name}{abs(ba[0].id)}-{tbl_name}{abs(ba[0].id)}')
-        Logger.log(f'SWAP OUT L-{level} {tbl_name}{abs(out[0].id)}-{tbl_name}{abs(out[0].id)}')
+        if type(ba[0]) == Record and type(ba[-1]) == Record:
+            Logger.log(f'SWAP IN L-{level} {tbl_name}{abs(ba[0].id)}-{tbl_name}{abs(ba[-1].id)}')
+        if type(out[0]) == Record and type(out[-1]) == Record:
+            Logger.log(f'SWAP OUT L-{level} {tbl_name}{abs(out[0].id)}-{tbl_name}{abs(out[-1].id)}')
     
     def _check_evicts(self, tbl_name, bas):
         for i in range(len(bas)):
@@ -203,8 +202,6 @@ class MemLSM():
         #update the page table
         self._check_evict(tbl_name, level, ba)
 
-        #Logging:
-        Logger.log(f'Read: {tbl_name} {rec.id} {rec.client_name} {rec.phone}')
         return rec
 
     def read_recs(self, tbl_name: str, area: str):
@@ -245,9 +242,6 @@ class MemLSM():
         #update the page table
         self._check_evicts(tbl_name, bas)
         
-        #Logging
-        for rec in found:
-            Logger.log(f'MRead: {tbl_name} {rec.id} {rec.client_name} {rec.phone}')
 
         return found
 
