@@ -46,7 +46,7 @@ class MemLSM():
                 r = m - 1
             else:
                 if recs[m].id < 0:
-                    return -1
+                    return None
                 # print('recs[m] ', recs[m])
                 return recs[m]
             m = int(l + (r - l) / 2)
@@ -96,12 +96,12 @@ class MemLSM():
             rec = self._bsearch(self._ba_2_recs(level[i]), rec_id)
 
             # print('_level read: ', rec, '\n')
-            if not type(rec) == int and int(rec.phone[:2]) >= 0:
+            if type(rec) == Record and int(rec.phone[:2]) >= 0:
                 #adjust the LRU sequence
                 ba = level.pop(i)
                 level.append(ba)
                 return rec
-        return -1
+        return None
 
     def _level_read_recs(self, level: list, area: str, pks, found):
         for i in range(len(level)):
@@ -161,26 +161,26 @@ class MemLSM():
             LRU = self.page_table[tbl_name]
         else:
             LRU = self.page_table[tbl_name]
-            re = self._level_read_rec(LRU[0], rec_id)
-            if not type(rec) == int: 
+            rec = self._level_read_rec(LRU[0], rec_id)
+            if rec is not None:
                 return rec
             rec = self._level_read_rec(LRU[1], rec_id)
-            if not type(rec) == int: 
+            if rec is not None:
                 return rec
             rec = self._level_read_rec(LRU[2], rec_id)
-            if not type(rec) == int: 
+            if rec is not None:
                 return rec
 
         #search in storage
         res = self.storage.get_record(rec_id, tbl_name)
         if res == -1:
-            return res
+            return None
 
         rec, ba, level = res
 
         #check if not found or deleted
         if ba == -1 or int(rec.phone[:2]) < 0 :
-            return -1
+            return None
         #update the page table
         self._check_evict(tbl_name, level, ba)
         return rec
