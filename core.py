@@ -44,7 +44,6 @@ class Core():
 
     def exec_inst(self, inst: Instruction):
         if isinstance(inst, str):
-            print(inst)
             return
 
         if inst.action == ACTION.RETRIEVE_BY_ID:
