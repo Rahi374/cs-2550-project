@@ -43,7 +43,7 @@ class SlottedPageCache():
         return len(self.cache_dic) + 1 <= self.MAX_NUM_BLOCKS
 
     def evict(self):
-        print("evicting!")
+        #print("evicting!")
         least_recently_used_id = min(self.cache_dic, key=lambda x: self.cache_dic[x]['last_used'])
         table_name = least_recently_used_id[0]
         block_id = int(least_recently_used_id[1])
