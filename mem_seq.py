@@ -132,7 +132,8 @@ class MemSeq():
                 slotted_page = SlottedPage(self.block_size, ba)
                 for record in slotted_page.records:
                     if is_primary and record is not None and record.id == rec_id: # Searching on primary key
-                        self.cache.cache(table_name, block_id, slotted_page)
+                        if (table_name, block_id) not in self.cache.cache_dic:
+                            self.cache.cache(table_name, block_id, slotted_page)
                         return [record]
                     elif not is_primary and record is not None and field == "area_code" and int(record.phone.split("-")[0]) == rec_id: # Searching by area code
                         all_records.append(record)
@@ -140,7 +141,8 @@ class MemSeq():
                         disk_block_id_to_cache = block_id
         
         if len(all_records) > 0 and slotted_page_to_cache is not None and disk_block_id_to_cache is not None:
-            self.cache.cache(table_name, disk_block_id_to_cache, slotted_page_to_cache)
+            if (table_name, disk_block_id_to_cache) not in self.cache.cache_dic:
+                self.cache.cache(table_name, disk_block_id_to_cache, slotted_page_to_cache)
             return all_records
 
         # Not in Storage
