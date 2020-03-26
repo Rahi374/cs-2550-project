@@ -3,6 +3,7 @@ import argparse
 from common import *
 from core import Core
 from inst import Instruction
+from logger import Logger
 from parser import Parser
 from record import Record
 import sys
@@ -17,6 +18,7 @@ parser.add_argument("mem_size",
                     type=int)
 parser.add_argument("block_size", help="size of disk blocks in bytes", type=int)
 parser.add_argument("-bps", "--blocks_per_ss", help="number of blocks in each SST. Must be specified if disk_org is LSM", type=int)
+parser.add_argument("-f", "--log_file", help="path to log", type=str, default="log.log")
 args = parser.parse_args()
 
 if args.disk_org == "SEQ":
@@ -38,6 +40,8 @@ if disk_org == ORG.SEQ and (args.mem_size < args.block_size or args.mem_size % a
 if disk_org == ORG.LSM and args.mem_size % (args.block_size * args.blocks_per_ss) != 0:
     print(f"mem_size must be multiple of {args.block_size * args.blocks_per_ss}")
     sys.exit()
+
+Logger.initialize(args.log_file)
 
 real_insts = Parser.parse(args.instruction_file)
 
