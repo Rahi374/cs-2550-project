@@ -6,18 +6,18 @@ class Logger(object):
 
     @staticmethod
     def initialize(file_name):
-        self.thread_safe_lock = threading.Lock()
-        self.file_to_write_out = file_name 
-        self.global_text_to_write = ""
+        Logger.thread_safe_lock = threading.Lock()
+        Logger.file_to_write_out = file_name
+        Logger.global_text_to_write = ""
 
     @staticmethod
     def log(stringy):
-        self.thread_safe_lock.acquire()
-        self.global_text_to_write += stringy + "\n"
-        self.thread_safe_lock.release()
+        Logger.thread_safe_lock.acquire()
+        Logger.global_text_to_write += stringy + "\n"
+        Logger.thread_safe_lock.release()
 
     @staticmethod
     def write_log():
-        f = open(self.file_to_write_out, "w+")
-        f.write(global_text_to_write)
+        f = open(Logger.file_to_write_out, "w+")
+        f.write(Logger.global_text_to_write)
         f.close()
