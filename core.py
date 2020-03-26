@@ -26,7 +26,7 @@ class Core():
             return MemSeq(mem_size, block_size, disk, disk_org)
         elif disk_org == ORG.LSM:
             # mem_size = blocks_per_ss * lru_size * block_size
-            return MemLSM(disk, block_size, blocks_per_ss, math.floor(mem_size/(blocks_per_ss * block_size)))
+            return MemLSM(disk, block_size, math.floor(mem_size/(blocks_per_ss * block_size)))
 
 
     def run(self, insts: list):
