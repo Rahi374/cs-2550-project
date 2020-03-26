@@ -47,9 +47,17 @@ class MemLSM():
             else:
                 if recs[m].id < 0:
                     return -1
+                # print('recs[m] ', recs[m])
                 return recs[m]
             
         return 0
+
+    def _get_area_recs(self, recs:list, area, pks:set, found:list):
+        for r in recs:
+            if r.id in pks:
+                continue
+            if r.phone[:3] == area:
+                found.append(r)
 
     def write_rec(self, tbl_name: str, rec: Record):
         '''
@@ -75,13 +83,21 @@ class MemLSM():
     
     def _level_read_rec(self, level: list, rec_id):
         for i in range(len(level)):
-            rec = self._bsearch(level[i])
-            if not rec == -1:
+            rec = self._bsearch(self._ba_2_recs(level[i]), rec_id)
+
+            # print('_level read: ', rec, '\n')
+            if not type(rec) == int:
                 #adjust the LRU sequence
                 ba = level.pop(i)
                 level.append(ba)
                 return rec
         return -1
+
+    def _level_read_recs(self, level: list, area, pks, found):
+        for i in range(len(level)):
+            self._get_area_recs(self._ba_2_recs(level[i]), area, pks, found)
+            
+
 
     def _ba_2_recs(self, ba):
         res = []
@@ -97,6 +113,12 @@ class MemLSM():
             l.pop(0)
         #append to the end
         l.append(ba)
+    
+    def _check_evicts(self, tbl_name, bas):
+        for i in range(len(bas)):
+            for ba in bas[i]:
+                self._check_evict(tbl_name, i, ba)
+
         
     def _print_pt(self):
         print()
@@ -131,20 +153,20 @@ class MemLSM():
         else:
             LRU = self.page_table[tbl_name]
             rec = self._level_read_rec(LRU[0], rec_id)
-            if not rec == -1: 
+            if not type(rec) == int: 
                 return rec
             rec = self._level_read_rec(LRU[1], rec_id)
-            if not rec == -1: 
+            if not type(rec) == int: 
                 return rec
             rec = self._level_read_rec(LRU[2], rec_id)
-            if not rec == -1:
+            if not type(rec) == int: 
                 return rec
 
         #search in storage
         rec, ba, level = self.storage.get_record(rec_id, tbl_name)
+        #update the page table
         self._check_evict(tbl_name, level, ba)
         return rec
-
     
 
     def del_tbl(self, tbl_name:str):
@@ -155,23 +177,37 @@ class MemLSM():
         """
         search for rec in pagetable
         and search for it in disk it necessary
-        # """ 
-        recs = []
+        """ 
+        found = []
         pks = set()
         #search in memtbl
         if tbl_name in self.memtbls:
             memtbl = self.memtbls[tbl_name]
             recs = memtbl.get_in_order_records()
-            # print(recs)
-            rec = self._bsearch(recs, rec_id)
-            if rec:
-                return rec
-            
+            self._get_area_recs(recs, area, pks, found)
 
-
-
-        #TODO: get the recs from disk
-        return list(recs)
+        #search in LRU
+        if tbl_name not in self.page_table:
+            #create LRU if necessary 
+            self.page_table[tbl_name] = [[], [], []] #L0, L1, L2
+            LRU = self.page_table[tbl_name]
+        else:
+            LRU = self.page_table[tbl_name]
+            self._level_read_recs(LRU[0], area, pks, found)
+            self._level_read_recs(LRU[1], area, pks, found)
+            self._level_read_recs(LRU[2], area, pks, found)
+        
+        #search in Storage
+        bas, found = self.storage.get_records(area, tbl_name, pks, found)
+        
+        #truncate the blocks returned from storage to fit the memory size
+        bas[0] = bas[0][:self.LRU_size]
+        bas[1] = bas[1][:self.LRU_size]
+        bas[2] = bas[2][:self.LRU_size]
+        #update the page table
+        self._check_evicts(tbl_name, bas)
+        
+        return found
         
     
 
@@ -222,6 +258,11 @@ if __name__ == '__main__':
         
         print(mem.read_rec('tbl3', 3))
         mem._print_pt()
+        print(mem.read_rec('tbl3', 123))
+
+        #test read_recs
+        print(mem.memtbls['tbl3'].ss_table)
+        print(mem.read_recs('tbl3', 999))
         
 
     
