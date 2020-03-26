@@ -1,12 +1,13 @@
 from common import *
 from enum import Enum
 from inst import Instruction
+from logger import Logger
+from LSMStorage import LSMStorage
 import math
 from mem_lsm import MemLSM
 from mem_seq import MemSeq
 from record import Record
 from storage import Storage
-from LSMStorage import LSMStorage
 
 class Core():
 
@@ -32,8 +33,11 @@ class Core():
     def run(self, insts: list):
         for inst in insts:
             print(f"Executing: {str(inst)}")
+            if isinstance(inst, Instruction):
+                Logger.log(inst.to_log())
             try:
                 ret = self.exec_inst(inst)
+                self.print_result(inst, ret)
             except Exception as e:
                 ret = e
             print(f"=> {ret}")
@@ -41,6 +45,7 @@ class Core():
         self.mem.flush()
         if self.disk_org == ORG.LSM:
             self.disk.kill_all_compaction_threads()
+        Logger.write_log()
 
     def exec_inst(self, inst: Instruction):
         if isinstance(inst, str):
@@ -106,3 +111,24 @@ class Core():
 
     def table_exists(self, table: str):
         return self.disk.table_exists(table)
+
+    def print_result(self, inst, result):
+        if not isinstance(inst, Instruction):
+            return
+
+        if inst.action == ACTION.RETRIEVE_BY_ID:
+            if len(result) == 0:
+                Logger.log(f"Read: {inst.table_name}, None")
+                return
+            Logger.log(f"Read: {inst.table_name}, {result[0].to_log_done()}")
+        if inst.action == ACTION.RETRIEVE_BY_AREA_CODE:
+            if len(result) == 0:
+                Logger.log(f"MRead: {inst.table_name}, None")
+            for record in result:
+                Logger.log(f"MRead: {inst.table_name}, {record.to_log_done()}")
+        if inst.action == ACTION.WRITE_RECORD:
+            Logger.log(f"Written: {inst.table_name}, {inst.tuple_data.to_log_done()}")
+        if inst.action == ACTION.DELETE_RECORD:
+            Logger.log(f"Erased: {inst.table_name} {inst.record_id}")
+        if inst.action == ACTION.DELETE_TABLE:
+            Logger.log(f"Deleted: {inst.table_name}")
