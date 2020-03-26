@@ -37,8 +37,6 @@ class SlottedPageCache():
                 'last_used': datetime.now()
         }
 
-
-
     def can_add(self):
         return len(self.cache_dic) + 1 <= self.MAX_NUM_BLOCKS
 
