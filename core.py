@@ -92,7 +92,10 @@ class Core():
                 raise Exception("multiple records with same id")
 
     def delete_record(self, table: str, rec_id: int):
-        self.mem.delete_rec(table, rec_id)
+        if self.disk_org == ORG.SEQ:
+            self.mem.delete_rec(table, rec_id)
+        elif self.disk_org == ORG.LSM:
+            self.mem.delete_record(table, rec_id)
 
     def delete_table(self, table: str):
         self.mem.delete_table(table)
