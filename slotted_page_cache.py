@@ -84,8 +84,8 @@ class SlottedPageCache():
             if key[0] == table_name:
                 records = self.cache_dic[key]['slotted_page'].records
                 for record in records:
-                    if record is not None and record.id == id:
-                        return record.cache_dic[key]['slotted_page']
+                    if record is not None and record.id == record_id:
+                        return self.cache_dic[key]['slotted_page']
 
         return None
 
