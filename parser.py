@@ -11,6 +11,10 @@ class Parser():
         lines = f.readlines()
         line_num = 1
         for line in lines:
+            if line[0] == "#":
+                instructions.append(line)
+                line_num +=1
+                continue
             split_line = line.split()
             action = split_line[0]
             table_name = split_line[1]

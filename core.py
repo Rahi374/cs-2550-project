@@ -36,6 +36,10 @@ class Core():
         self.mem.flush()
 
     def exec_inst(self, inst: Instruction):
+        if isinstance(inst, str):
+            print(inst)
+            return
+
         if inst.action == ACTION.RETRIEVE_BY_ID:
             return self.read_id(inst.table_name, inst.record_id)
 
