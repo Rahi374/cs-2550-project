@@ -20,6 +20,17 @@ class Instruction():
             self.tuple_data = data
 
     def __str__(self):
+        data = self.get_data_for_str()
+        return f"{ACTION_WORDS[self.action]}, {self.table_name}, {data}"
+
+    def to_log(self):
+        data = self.get_data_for_str()
+        if data is not None:
+            return f"{ACTION_CODES[self.action]} {self.table_name} {data}"
+
+        return f"{ACTION_CODES[self.action]} {self.table_name}"
+
+    def get_data_for_str(self):
         if self.action == ACTION.RETRIEVE_BY_ID or \
            self.action == ACTION.RETRIEVE_BY_AREA_CODE or \
            self.action == ACTION.DELETE_RECORD:
@@ -28,4 +39,4 @@ class Instruction():
             data = self.tuple_data
         elif self.action == ACTION.DELETE_TABLE:
             data = None
-        return f"{ACTION_WORDS[self.action]}, {self.table_name}, {data}"
+        return data
