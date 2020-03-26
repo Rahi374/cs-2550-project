@@ -156,7 +156,7 @@ class MemLSM():
             LRU = self.page_table[tbl_name]
         else:
             LRU = self.page_table[tbl_name]
-            rec = self._level_read_rec(LRU[0], rec_id)
+            re = self._level_read_rec(LRU[0], rec_id)
             if not type(rec) == int: 
                 return rec
             rec = self._level_read_rec(LRU[1], rec_id)
@@ -276,8 +276,10 @@ if __name__ == '__main__':
 
         #test read_recs
         print('tbl3 memtable: ', mem.memtbls['tbl3'].ss_table)
-        print('result: ', mem.read_recs('tbl3', 999))
+        #print('result: ', mem.read_recs('tbl3', 999))
         mem._print_pt()
+
+        print("**\n\n**")
         print('result: ', mem.read_recs('tbl2', 401))
         mem._print_pt()
         

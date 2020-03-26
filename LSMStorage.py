@@ -91,12 +91,13 @@ class LSMStorage():
                 rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
                 rec_phone_num = b_arr[start_of_rec+20:start_of_rec+32].decode()
                 rec_area_code = rec_phone_num.split("-")[0]
-                if rec_area_code == area_code:
+
+                if rec_area_code == str(area_code):
                     match_found = True
                     if rec_id not in hm_keys_found:
                         hm_keys_found.add(rec_id)
                         ret_rec = Record(rec_id, rec_name, rec_phone_num)
-                        rec_list.append(new_rec)
+                        rec_list.append(ret_rec)
 
 
             f.close()
@@ -194,10 +195,6 @@ class LSMStorage():
                 records_to_write = 0
             else:
                 recs_to_write = records[i:i+records_per_block]
-                #print("writing records in level sst:")
-                #print(recs_to_write)
-                #print("\n\n\n")
-                #print(self.get_byte_array_of_records(recs_to_write))
                 f = open(dir_path+"/"+str(c)+"_"+str(records_per_block), "wb+")
                 f.write(self.get_byte_array_of_records(recs_to_write))
                 f.close()
