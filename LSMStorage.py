@@ -135,30 +135,18 @@ class LSMStorage():
 
 
     def push_memtable(self, memtable):
+        #print("Pushing memtable")
         table_name = memtable.tbl_name
-        self.L0_lock_hm[table_name].acquire()
+        #print("got l0 lock for push_memtable")
         all_records = memtable.get_in_order_records()
         lower, upper = all_records[0].id, all_records[-1].id
         self.write_records_to_level_SST(all_records, memtable.tbl_name, lower, upper, "L0")
-        self.metadata_counts[table_name+"L0"] = self.metadata_counts[table_name+"L0"] + 1 
-        self.L0_lock_hm[table_name].release()
-        if self.metadata_counts[table_name+"L0"] == 4: #compact L0 if no more room
-            if self.metadata_counts[table_name+"L1"] > 6:#if L1 would not be able to take L0, compact it
-                L1_lock = self.L1_lock_hm[table_name]
-                L2_lock = self.L2_lock_hm[table_name]
-                L1_lock.acquire()
-                L2_lock.acquire()
+        print("count of tables is: "+str(self.metadata_counts[table_name+"L0"]))
+        if self.metadata_counts[table_name+"L0"] >= 4: #compact L0 if no more room
+            if self.metadata_counts[table_name+"L1"] >= 6:#if L1 would not be able to take L0, compact it
+                print("need to compact L1")
                 self.compact_L1(table_name)
-                L2_lock.release()
-                L1_lock.release()
-
-            L0_lock = self.L0_lock_hm[table_name]
-            L1_lock = self.L1_lock_hm[table_name]
-            L0_lock.acquire()
-            L1_lock.acquire()
             self.compact_L0(table_name)
-            L1_lock.release()
-            L0_lock.release()
 
 
 
@@ -172,14 +160,21 @@ class LSMStorage():
             L0_lock = self.L0_lock_hm[table_name]
             L1_lock = self.L1_lock_hm[table_name]
             L2_lock = self.L2_lock_hm[table_name]
-            L0_lock.acquire()
-            L1_lock.acquire()
-            L2_lock.acquire()
+            #L0_lock.acquire()
+            #print("l0 lock acquired 2")
+            #L1_lock.acquire()
+            #print("l1 lock acquired 2")
+            #L2_lock.acquire()
+            #print("l2 lock acquired 2")
+            #print("done acquiring locks for 2")
             self.thread_should_run[table_name] = False
             shutil.rmtree('storage/'+table_name)
-            L2_lock.release()
-            L1_lock.release()
-            L0_lock.release()
+            #L2_lock.release()
+            #print("l2 lock released 2")
+            #L1_lock.release()
+            #print("l1 lock released 2")
+            #L0_lock.release()
+            print("l0 lock released 2")
         except Exception as e:
             print(e)
             print("exception in deletion of table")
@@ -236,7 +231,9 @@ class LSMStorage():
 
     def check_level_for_rec(self, record_id, table_name, level):
         level_lock = self.level_to_lock_hm[level][table_name]
-        level_lock.acquire()
+        #level_lock.acquire()
+        #print("level: "+level+" lock acquired 333")
+        #print("done acquiring locks for 333")
         dir_path = "storage/"+table_name+"/"+level
         ss_tables = os.listdir(dir_path)
         rec, ss = None, -1
@@ -247,7 +244,8 @@ class LSMStorage():
                 if ss != -1:
                     level_lock.release()
                     return rec, ss
-        level_lock.release()
+        #level_lock.release()
+        #print("level: "+level+" lock released 333")
         return rec, ss
 
     def check_sst_for_record(self, record_id, table_name, level, sst):
@@ -315,47 +313,33 @@ class LSMStorage():
         L1_comp_thread = threading.Thread(target=self.start_L1Compaction, args=(table_name,))
         self.compaction_thread_hm["L0"+table_name] = L0_comp_thread
         self.compaction_thread_hm["L1"+table_name] = L1_comp_thread
-        L0_comp_thread.start()
-        L1_comp_thread.start() #TODO re-enable this
+        #L0_comp_thread.start()
+        #L1_comp_thread.start()
 
     def start_L0Compaction(self, table_name):
-        L0_lock = self.L0_lock_hm[table_name]
-        L1_lock = self.L1_lock_hm[table_name]
         while True:
             should_still_run = self.thread_should_run[table_name]
             if not should_still_run:
                 break
-            L0_lock.acquire()
-            L1_lock.acquire()
             self.compact_L0(table_name)
-            L1_lock.release()
-            L0_lock.release()
             time.sleep(5)
 
     def start_L1Compaction(self,table_name):
-        L1_lock = self.L1_lock_hm[table_name]
-        L2_lock = self.L2_lock_hm[table_name]
         while True:
             should_still_run = self.thread_should_run[table_name]
             if not should_still_run:
                 break
-            L1_lock.acquire()
-            L2_lock.acquire()
             self.compact_L1(table_name)
-            L2_lock.release()
-            L1_lock.release()
             time.sleep(10)
 
 
     def compact_L0(self, table_name):
-        if self.metadata_counts[table_name+"L1"] > 6:#if L1 would not be able to take L0, compact it
-            L1_lock = self.L1_lock_hm[table_name]
-            L2_lock = self.L2_lock_hm[table_name]
-            L1_lock.acquire()
-            L2_lock.acquire()
+        L0_lock = self.L0_lock_hm[table_name]
+        L1_lock = self.L1_lock_hm[table_name]
+        if self.metadata_counts[table_name+"L1"] >= 6:#if L1 would not be able to take L0, compact it
             self.compact_L1(table_name)
-            L2_lock.release()
-            L1_lock.release()
+        #L0_lock.acquire()
+        #L1_lock.acquire()
         list_of_records = []
         dir_of_L0 = "storage/"+table_name+"/L0"
         for sst in os.listdir(dir_of_L0):
@@ -378,8 +362,11 @@ class LSMStorage():
             os.rmdir(dir_of_L0+"/"+sst)
         list_of_records = [r for r in list_of_records if r.id != -2]
         list_of_records.sort(key=lambda x: x.id)
+        #L1_lock.release()
+        #L0_lock.release()
         self.write_L0_records_to_L1(list_of_records, table_name)
         self.metadata_counts[table_name+"L0"] = 0
+        print("compact L0 finished")
         return
 
 
@@ -387,11 +374,54 @@ class LSMStorage():
         if len(recs) == 0:
             return
         self.remove_duplicate_level_entries(recs, table_name, "L1")
-        lower, upper = recs[0].id, recs[-1].id
-        self.write_records_to_level_SST(recs, table_name, lower, upper, "L1")
+        
+
+        print("write l0 to l1")
+        list_of_records = []
+        dir_of_L1 = "storage/"+table_name+"/L1"
+        for sst in os.listdir(dir_of_L1):
+            for b in os.listdir(dir_of_L1+"/"+sst):
+                f = open(dir_of_L1+"/"+sst+"/"+b, "w+b")
+                b_arr = bytearray(f.read())
+                num_recs = int(b.split("_")[1])            
+                rec_num = 0
+                for r in range(num_recs):
+                    start_of_rec = rec_num * get_size_of_records() 
+                    rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
+                    rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
+                    rec_phone = b_arr[start_of_rec+20:start_of_rec+32].decode()
+                    list_of_records.append(Record(rec_id, rec_name, rec_phone))
+                    rec_num += 1
+                f.close()
+                os.remove(dir_of_L1+"/"+sst+"/"+b)
+
+            os.rmdir(dir_of_L1+"/"+sst)
+        list_of_records = [r for r in list_of_records if r.id != -2]
+        for rec in recs:
+            list_of_records.append(rec)
+        list_of_records.sort(key=lambda x: x.id)
+        #L2_lock.release()
+        #L1_lock.release()
+        num_ssts_needed = math.ceil(len(list_of_records)/self.get_records_per_sst())
+        total_records_needed_written = len(list_of_records)
+        recs_written = 0
+        for i in range(num_ssts_needed):
+            if total_records_needed_written >= self.get_records_per_sst():
+                recs_to_write = list_of_records[i*self.get_records_per_sst(): (i+1)*self.get_records_per_sst()]
+                self.write_records_to_level_SST(recs_to_write, table_name, recs_to_write[0].id, recs_to_write[-1].id, "L2")
+                total_records_needed_written -= self.get_records_per_sst()
+            else:
+                recs_to_write = list_of_records[i*self.get_records_per_sst():i*self.get_records_per_ss()+total_records_needed_written]
+                self.write_records_to_level_SST(recs_to_write, table_name, recs_to_write[0].id, recs_to_write[-1].id, "L2")
+                total_records_needed_written = 0
 
 
     def compact_L1(self, table_name):
+        print("compact l1 running")
+        #L1_lock = self.L0_lock_hm[table_name]
+        #L2_lock = self.L1_lock_hm[table_name]
+        #L1_lock.acquire()
+        #L2_lock.acquire()
         list_of_records = []
         dir_of_L1 = "storage/"+table_name+"/L1"
         for sst in os.listdir(dir_of_L1):
@@ -413,6 +443,8 @@ class LSMStorage():
             os.rmdir(dir_of_L1+"/"+sst)
         list_of_records = [r for r in list_of_records if r.id != -2]
         list_of_records.sort(key=lambda x: x.id)
+        #L2_lock.release()
+        #L1_lock.release()
         self.write_L1_records_to_L2(list_of_records, table_name)
         self.metadata_counts[table_name+"L1"] = 0
         return
@@ -421,6 +453,10 @@ class LSMStorage():
     def write_L1_records_to_L2(self, recs, table_name):
         if len(recs) == 0:
             return
+        L1_lock = self.L0_lock_hm[table_name]
+        L2_lock = self.L1_lock_hm[table_name]
+        #L1_lock.acquire()
+        #L2_lock.acquire()
         self.remove_duplicate_level_entries(recs, table_name, "L2")
         list_of_records = []
         dir_of_L2 = "storage/"+table_name+"/L2"
@@ -428,11 +464,11 @@ class LSMStorage():
             for b in os.listdir(dir_of_L2+"/"+sst):
                 f = open(dir_of_L2+"/"+sst+"/"+b, "w+b")
                 b_arr = bytearray(f.read())
-                num_recs = b.split("_")[1]            
+                num_recs = int(b.split("_")[1])            
                 rec_num = 0
                 for r in range(num_recs):
                     start_of_rec = rec_num * get_size_of_records() 
-                    rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byterder="little", signed=True)
+                    rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
                     rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
                     rec_phone = b_arr[start_of_rec+20:start_of_rec+32].decode()
                     list_of_records.append(Record(rec_id, rec_name, rec_phone))
@@ -440,14 +476,32 @@ class LSMStorage():
                 f.close()
                 os.remove(dir_of_L2+"/"+sst+"/"+b)
 
-            os.remove(dir_of_L2+"/"+sst)
+            os.rmdir(dir_of_L2+"/"+sst)
         list_of_records = [r for r in list_of_records if r.id != -2]
         for rec in recs:
             list_of_records.append(rec)
         list_of_records.sort(key=lambda x: x.id)
-        self.write_records_to_level_SST(list_of_records, table_name, list_of_records[0].id, list_of_records[-1].id, "L2")
+        #L2_lock.release()
+        #L1_lock.release()
+        num_ssts_needed = math.ceil(len(list_of_records)/self.get_records_per_sst())
+        total_records_needed_written = len(list_of_records)
+        recs_written = 0
+        for i in range(num_ssts_needed):
+            if total_records_needed_written >= self.get_records_per_sst():
+                recs_to_write = list_of_records[i*self.get_records_per_sst(): (i+1)*self.get_records_per_sst()]
+                self.write_records_to_level_SST(recs_to_write, table_name, recs_to_write[0].id, recs_to_write[-1].id, "L2")
+                total_records_needed_written -= self.get_records_per_sst()
+            else:
+                recs_to_write = list_of_records[i*self.get_records_per_sst():i*self.get_records_per_ss()+total_records_needed_written]
+                self.write_records_to_level_SST(recs_to_write, table_name, recs_to_write[0].id, recs_to_write[-1].id, "L2")
+                total_records_needed_written = 0
+
+
         return
 
+
+    def get_records_per_sst(self):
+        return self.blocks_per_ss * math.floor(self.blk_size / get_size_of_records())
 
 def get_size_of_records():
     return 32

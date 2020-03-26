@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-for i in range(5000):
+for i in range(1000):
     if i % 2 == 0:
         phone = "412-888-8888" 
     else:
