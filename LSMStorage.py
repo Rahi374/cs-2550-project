@@ -61,37 +61,46 @@ class LSMStorage():
                 return rec, ss, 0
             return rec, ss, 2
 
-    def get_records(self, area_code, table_name, hm_keys_found):
+    def get_records(self, area_code, table_name, hm_keys_found, rec_list):
         l0_list = []
         l1_list = []
         l2_list = []
-        get_matching_area_code_byte_arrays(l0_list, table_name, area_code, "L0")
-        get_matching_area_code_byte_arrays(l1_list, table_name, area_code, "L1")
-        get_matching_area_code_byte_arrays(l2_list, table_name, area_code, "L2")
+        get_matching_area_code_byte_arrays(l0_list, rec_list, table_name, area_code, "L0", hm_keys_found)
+        get_matching_area_code_byte_arrays(l1_list, rec_list, table_name, area_code, "L1", hm_keys_found)
+        get_matching_area_code_byte_arrays(l2_list, rec_list, table_name, area_code, "L2", hm_keys_found)
         list_of_bytearrays_lists = [l0_list, l1_list, l2_list]
-        return list_of_bytearrays
+        return list_of_bytearrays, rec_list
 
-    def get_matching_area_code_byte_arrays(self, list_of_bytearrays, table_name, area_code, level):
+    def get_matching_area_code_byte_arrays(self, list_of_bytearrays, rec_list, table_name, area_code, level, hm_keys_found):
         level_dir = "storage/"+level
         for sst in os.listdir(level_dir):
             sst_dir = level_dir + "/" + sst
-            if self.sst_contains_record_matching_area_code(sst_dir, area_code):
+            if self.sst_contains_record_matching_area_code(sst_dir, area_code, rec_list, hm_keys_found):
                 list_of_bytearrays.append(self.get_sst_as_b_arr(table_name, level, sst))
 
-    def sst_contains_record_matching_area_code(self, sst_dir, area_code):
+    def sst_contains_record_matching_area_code(self, sst_dir, area_code, rec_list, hm_keys_found):
         blocks = os.listdir(sst_dir)
+        match_found = False
         for b in blocks:
             num_recs = int(b.split("_")[1])
             f = open(sst_dir+"/"+b, "rb")
             b_arr = bytearray(f.read())
             for i in range(num_recs):
                 start_of_rec = i * get_size_of_records()
+                rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
+                rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
                 rec_phone_num = b_arr[start_of_rec+20:start_of_rec+32].decode()
                 rec_area_code = phone_num.split("-")[0]
                 if rec_area_code == area_code:
-                    f.close()
-                    return True
+                    match_found = True
+                    if rec_id not in hm_keys_found:
+                        hm_keys_found.add(rec_id)
+                        ret_rec = Record(rec_id, rec_name, rec_phone)
+                        rec_list.append(new_rec)
+
+
             f.close()
+        return match_found
 
     def build_memtable(self, table_name):
         table_exists = self.check_if_table_exists(table_name)
