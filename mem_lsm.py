@@ -17,6 +17,7 @@ from SSTable import SSTable as SST
 from record import Record
 from core import ORG
 from logger import Logger 
+import common
 import sys
 
 
@@ -118,8 +119,8 @@ class MemLSM():
             
     def _ba_2_recs(self, ba):
         res = []
-        for i in range(8):
-            rec = Record(ba = ba[i * 32: (i + 1) * 32])
+        for i in range(len(ba) / common.RECORD_SIZE):
+            rec = Record(ba = ba[i * common.RECORD_SIZE: (i + 1) * common.RECORD_SIZE])
             res.append(rec)
         return res
 
