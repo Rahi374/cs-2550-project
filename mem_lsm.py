@@ -21,7 +21,7 @@ import sys
 
 class MemLSM():
 
-    def __init__(self, storage, block_size = 64, blocks_per_SS = 4, LRU_size = 3):
+    def __init__(self, storage, block_size = 64, blocks_per_SS = 3, LRU_size = 3):
         self.num_of_memtbls = 0
         
         self.storage = storage
@@ -62,7 +62,7 @@ class MemLSM():
             #print(found)
 
     def delete_record(self, tbl_name: str, rec_id):
-        write_rec(self, tbl_name, None, True, rec_id)
+        self.write_rec(tbl_name = tbl_name, rec = None, is_del = True, rec_id = rec_id)
 
     def write_rec(self, tbl_name: str, rec: Record = None, is_del = False, rec_id = None):
         '''
@@ -94,7 +94,7 @@ class MemLSM():
             rec = self._bsearch(self._ba_2_recs(level[i]), rec_id)
 
             # print('_level read: ', rec, '\n')
-            if not type(rec) == int:
+            if not type(rec) == int and int(rec.phone[:2]) >= 0:
                 #adjust the LRU sequence
                 ba = level.pop(i)
                 level.append(ba)
@@ -170,22 +170,18 @@ class MemLSM():
                 return rec
 
         #search in storage
-        rec, ba, level = self.storage.get_record(rec_id, tbl_name)
+        res = self.storage.get_record(rec_id, tbl_name)
+        if res == -1:
+            return res
+
+        rec, ba, level = res
+
         #check if not found or deleted
-        if ba == -1 or int(rec.phone):
-            return rec
+        if ba == -1 or int(rec.phone[:2]) < 0 :
+            return -1
         #update the page table
         self._check_evict(tbl_name, level, ba)
         return rec
-    
-
-    def delete_table(self, tbl_name: str):
-        # remove from memtbl if exists
-        self.memtbls.pop(tbl_name, None)
-        # remove from LRU if exists
-        self.page_table.pop(tbl_name, None)
-        # remove from storage - core already calls storage::remove_table()
-
 
     def read_recs(self, tbl_name: str, area: str):
         """
@@ -227,6 +223,14 @@ class MemLSM():
         
         return found
 
+    def delete_table(self, tbl_name: str):
+        # remove from memtbl if exists
+        self.memtbls.pop(tbl_name, None)
+        # remove from LRU if exists
+        self.page_table.pop(tbl_name, None)
+        # remove from storage - core already calls storage::remove_table()
+
+
     def flush(self):
         print("LSM flushing")
 
@@ -235,15 +239,28 @@ class MemLSM():
 
 if __name__ == '__main__':
     #test delete record
-    mem = MemLSM(LSM(32, 4))
+    mem = MemLSM(LSM(64, 3))
     mem.write_rec('tbl1', Record(1, 'name1', '111-222-3333'))
     mem.write_rec('tbl1', Record(2, 'name2', '111-222-3333'))
     mem.write_rec('tbl1', Record(3, 'name3', '111-222-3333'))
     mem.write_rec('tbl1', Record(4, 'name1', '111-222-3333'))
     mem.write_rec('tbl1', Record(5, 'name1', '222-222-3333'))
     mem.write_rec('tbl1', Record(6, 'name1', '444-222-3333'))
+    mem.write_rec('tbl1', Record(17, 'name1', '333-222-3333'))
     mem.write_rec('tbl1', Record(7, 'name1', '333-222-3333'))
     mem.write_rec('tbl1', Record(8, 'name1', '999-222-3333'))
+
+    print('result', mem.read_recs('tbl1', 333))
+    mem.delete_record('tbl1', 7)
+    
+    mem.write_rec('tbl1', Record(11, 'name1', '111-222-3333'))
+    mem.write_rec('tbl1', Record(12, 'name2', '111-222-3333'))
+    mem.write_rec('tbl1', Record(13, 'name3', '111-222-3333'))
+    mem.write_rec('tbl1', Record(14, 'name1', '111-222-3333'))
+    mem.write_rec('tbl1', Record(15, 'name1', '222-222-3333'))
+    mem.write_rec('tbl1', Record(16, 'name1', '444-222-3333'))
+    mem.write_rec('tbl1', Record(17, 'name1', '333-222-3333'))
+    mem.write_rec('tbl1', Record(18, 'name1', '999-222-3333'))
 
 
     mem.write_rec('tbl2', Record(1, 'name1', '111-222-3333'))
@@ -256,5 +273,21 @@ if __name__ == '__main__':
     mem.write_rec('tbl2', Record(8, 'name1', '999-222-3333'))
     mem.write_rec('tbl2', Record(5, 'name1', '999-222-3333'))
 
-    print(mem.read_rec('tbl2', 5))
+    print(mem.memtbls['tbl1'].ss_table)
+    print(mem.read_rec('tbl1', 2))
+    print(mem.read_rec('tbl1', 1))
+    mem._print_pt()
+    # mem.delete_record('tbl2', 4)
+    # mem._print_pt()
+    # print(mem.read_rec('tbl2', 4))
+
+
+    # print(mem.memtbls['tbl1'].ss_table)
+    # print(mem.read_rec('tbl1', 7))
+    # print('result', mem.read_recs('tbl1', 333))
+
+
+    
+
+    
 
