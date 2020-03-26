@@ -229,7 +229,7 @@ class LSMStorage():
         rec, ss = None, -1
         for s in ss_tables:
             lower, upper = self.metadata_ranges[dir_path+"/"+s]
-            if lower <= record_id and upper >= record_id:
+            if lower <= int(record_id) and upper >= int(record_id):
                 rec, ss = self.check_sst_for_record(record_id, table_name, level, s)
                 if ss != -1:
                     return rec, ss
