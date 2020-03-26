@@ -97,7 +97,9 @@ class SlottedPage():
                 offset = i * RECORD_SIZE
             pointers.prepend(BitArray(bin=np.binary_repr(offset, width=self.addr_bit_width)))
 
-        return ba + pad_bits(pointers, self.num_bytes_for_pointers).bytes
+        padded_pointers = pad_bits(pointers, self.num_bytes_for_pointers).bytes
+        diff = self.block_size - len(ba) - len(padded_pointers)
+        return ba + bytearray(diff) + padded_pointers
 
     def has_space(self):
         return self.num_records < self.max_num_records 
