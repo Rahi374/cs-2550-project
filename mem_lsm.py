@@ -2,8 +2,8 @@
 # constructor(storage storage)
 # retrieve_record(string table, int id)
 # retrieve_record(string table, int area_code) - some sort of switch
-# write_record(string table, tuple record)
-# update_record(string table, tuple record)
+# write_rec(self, tbl_name: str, rec: Record = None, is_del = False, rec_id = None):
+
 
 # Mem (common, private):
 # blocks[byte[block_size]]
@@ -62,7 +62,7 @@ class MemLSM():
                 found.append(r)
             #print(found)
 
-    def write_rec(self, tbl_name: str, rec: Record):
+    def write_rec(self, tbl_name: str, rec: Record = None, is_del = False, rec_id = None):
         '''
         for both update and add record in LSM
         '''
@@ -82,7 +82,10 @@ class MemLSM():
             memtbl = self.storage.build_memtable(tbl_name)
             self.memtbls[tbl_name] = memtbl
     
-        memtbl.add_record(rec)
+        if is_del:
+            memtbl.delete_record(rec_id)
+        else:
+            memtbl.add_record(rec)
     
     def _level_read_rec(self, level: list, rec_id):
         for i in range(len(level)):
@@ -181,6 +184,7 @@ class MemLSM():
         #remove from storage
         self.storage.delete_table(tbl_name)
 
+
     def read_recs(self, tbl_name: str, area: str):
         """
         search for rec in pagetable
@@ -206,7 +210,11 @@ class MemLSM():
             self._level_read_recs(LRU[2], area, pks, found)
         
         #search in Storage
-        bas, found = self.storage.get_records(area, tbl_name, pks, found)
+        res = self.storage.get_records(area, tbl_name, pks, found)
+        if res == -1:
+            return res
+            
+        bas, found = res
         
         #truncate the blocks returned from storage to fit the memory size
         bas[0] = bas[0][:self.LRU_size]
@@ -269,7 +277,7 @@ if __name__ == '__main__':
         mem.write_rec('tbl3', Record(13, 'test', '401-222-3142'))
         mem.write_rec('tbl3', Record(4, 'eeee', '411-222-3142'))
         mem.write_rec('tbl3', Record(5, 'test', '123-222-3142'))
-        mem.write_rec('tbl3', Record(13, 'test', '401-222-1111'))
+        mem.write_rec('tbl3', Record(13, 'test', '555-222-1111'))
         mem.write_rec('tbl3', Record(6, 'test', '999-222-3142'))
         
         
@@ -286,6 +294,10 @@ if __name__ == '__main__':
         print('result2: ', mem.read_recs('tbl2', 401))
         mem._print_pt()
         
+        #test delete record
+        print('result2: ', mem.read_recs('tbl2', 999))
+        mem.write_rec('tbl2', is_del=True, rec_id=444)
+        print('result2: ', mem.read_recs('tbl2', 999))
         
         #test delete table
         mem.del_tbl('tbl3')
@@ -297,6 +309,9 @@ if __name__ == '__main__':
         mem._print_pt()
         print('memtbl: ', mem.memtbls)
         print('result after del tbl3: ', mem.read_recs('tbl2', 401))
+
+
+        
         
         
         
