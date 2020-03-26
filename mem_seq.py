@@ -79,6 +79,7 @@ class MemSeq():
         record = self.cache.search_by_id(table, rec.id)
         if record is not None:
             # Should be good to update the tuple in core on the spot since its pass by reference
+            record[0].overwrite_values(rec)
             return
 
         # Record's block is missing in cache. Search for it in storage and bring it to cache
@@ -159,7 +160,7 @@ class MemSeq():
                 block_id = int(disk_block.split("_")[1].split(".")[0])
                 ba = self.storage.read_blk(table_name, block_id)
 
-                slotted_page = SlottedPage(ba, self.block_size)
+                slotted_page = SlottedPage(self.block_size, ba)
                 for record in slotted_page.records:
                     if record is not None and record.id == rec_id: # Searching on primary key
                         self.cache.cache(table_name, block_id, slotted_page)
