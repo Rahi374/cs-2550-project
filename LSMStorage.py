@@ -62,6 +62,11 @@ class LSMStorage():
             return rec, ss, 2
 
     def get_records(self, area_code, table_name, hm_keys_found, rec_list):
+        table_exists = self.check_if_table_exists(table_name)
+        if not table_exists:
+            print("no table")
+            return -1
+
         l0_list = []
         l1_list = []
         l2_list = []
@@ -148,9 +153,18 @@ class LSMStorage():
 
     def delete_table(self, table_name):
         try:
+            L0_lock = self.L0_lock_hm[table_name]
+            L1_lock = self.L1_lock_hm[table_name]
+            L2_lock = self.L2_lock_hm[table_name]
+            L0_lock.acquire()
+            L1_lock.acquire()
+            L2_lock.acquire()
             self.thread_should_run[table_name] = False
             shutil.rmtree('storage/'+table_name)
             os.rmdir('storage/'+table_name)
+            L2_lock.release()
+            L1_lock.release()
+            L0_lock.release()
         except Exception as e:
             print(e)
             print("exception in deletion of table")
