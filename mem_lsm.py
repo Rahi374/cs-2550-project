@@ -240,10 +240,13 @@ class MemLSM():
 
 
     def flush(self):
-        print("LSM flushing")
+        for memtable in self.memtbls.values():
+            self.storage.push_memtable(memtable)
 
     def print_cache(self):
-        print("LSM cache")
+        for memtable in self.memtbls.values():
+            print(memtable.ss_table)
+        self._print_pt()
 
 if __name__ == '__main__':
     #test delete record
