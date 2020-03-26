@@ -56,8 +56,11 @@ class MemLSM():
         for r in recs:
             if r.id in pks:
                 continue
-            if r.phone[:3] == area:
+
+            if int(r.phone[:3]) == int(area):
+                pks.add(r.id)
                 found.append(r)
+            #print(found)
 
     def write_rec(self, tbl_name: str, rec: Record):
         '''
@@ -96,6 +99,7 @@ class MemLSM():
     def _level_read_recs(self, level: list, area, pks, found):
         for i in range(len(level)):
             self._get_area_recs(self._ba_2_recs(level[i]), area, pks, found)
+        # print('level_read_recs: ', found)
             
 
 
@@ -247,6 +251,15 @@ if __name__ == '__main__':
         mem.write_rec('tbl3', Record(3, 'test2', '999-111-3333'))
         mem.write_rec('tbl3', Record(122, 'test', '999-111-0000'))
 
+        mem.write_rec('tbl3', Record(3, 'eeee', '101-101-1000'))
+        mem.write_rec('tbl3', Record(3, 'eeee', '101-100-1000'))
+        mem.write_rec('tbl3', Record(3, 'eeee', '999-110-1000'))
+        mem.write_rec('tbl3', Record(3, 'eeee', '101-010-1000'))
+        mem.write_rec('tbl3', Record(4, 'eeee', '101-110-1000'))
+        mem.write_rec('tbl3', Record(4, 'eeee', '101-100-1000'))
+        mem.write_rec('tbl3', Record(4, 'eeee', '101-110-1000'))
+        mem.write_rec('tbl3', Record(4, 'eeee', '999-010-1000'))
+
         mem.write_rec('tbl3', Record(10, 'test', '999-111-4444'))
         mem.write_rec('tbl3', Record(11, 'test', '123-222-3142'))
         mem.write_rec('tbl3', Record(12, 'test', '401-222-3142'))
@@ -256,13 +269,19 @@ if __name__ == '__main__':
         mem.write_rec('tbl3', Record(13, 'test', '401-222-1111'))
         mem.write_rec('tbl3', Record(6, 'test', '999-222-3142'))
         
+        
         print(mem.read_rec('tbl3', 3))
         mem._print_pt()
         print(mem.read_rec('tbl3', 123))
 
         #test read_recs
-        print(mem.memtbls['tbl3'].ss_table)
-        print(mem.read_recs('tbl3', 999))
+        print('tbl3 memtable: ', mem.memtbls['tbl3'].ss_table)
+        print('result: ', mem.read_recs('tbl3', 999))
+        mem._print_pt()
+        print('result: ', mem.read_recs('tbl2', 401))
+        mem._print_pt()
+        
+        
         
 
     
@@ -271,19 +290,3 @@ if __name__ == '__main__':
 
         
         
-
-
-        # for x in mem.page_table.keys():
-        #     print(x)
-        #     for y in mem.page_table[x]:
-        #         print(y)
-
-        # print(mem.read_recs('tbl2', '999')) 
-        # print(mem.read_recs('tbl1', '401'))
-
-        # print(mem.read_rec('tbl1', 123))
-        # print(mem.read_rec('tbl2', 3))
-        
-        
-
-            
