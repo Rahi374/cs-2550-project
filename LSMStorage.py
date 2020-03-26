@@ -165,6 +165,8 @@ class LSMStorage():
         if not self.table_exists(table_name):
             return
 
+        delete_log_str = "DELETED: "+table_name
+        Logger.log(delete_log_str)
         try:
             L0_lock = self.L0_lock_hm[table_name]
             L1_lock = self.L1_lock_hm[table_name]
@@ -212,6 +214,8 @@ class LSMStorage():
         records_to_write = len(records)
         c = 0 #file number
         i = 0 #record number
+        create_log_str = "CREATE "+level+" K-"+str(lower)+"-"+str(upper)
+        Logger.log(create_log_str)
         while records_to_write > 0:
             if records_to_write < records_per_block:
                 recs_to_write = records[i:i+records_to_write]
