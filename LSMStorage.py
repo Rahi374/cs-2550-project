@@ -27,21 +27,21 @@ class LSMStorage():
         self.level_to_lock_hm["L1"] = self.L1_lock_hm
         self.level_to_lock_hm["L2"] = self.L2_lock_hm
         #delete old directory if exists
-        if os.path.isdir('storage'):
-            try:
-                shutil.rmtree('storage/')
-            except Exception as e:
-                print(e)
-                print("exception in deletion of old storage")
+        #if os.path.isdir('storage'):
+        #    try:
+        #        shutil.rmtree('storage/')
+        #    except Exception as e:
+        #        print(e)
+        #        print("exception in deletion of old storage")
 
-        #make storage directory
-        try:
-            os.mkdir('storage')
-        except Exception as e:
-            print(e)
-            print("exception in mkdir")
+        ##make storage directory
+        #try:
+        #    os.mkdir('storage')
+        #except Exception as e:
+        #    print(e)
+        #    print("exception in mkdir")
 
-        os.chmod('storage', 0o777)
+        #os.chmod('storage', 0o777)
 
 
         return
