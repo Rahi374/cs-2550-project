@@ -26,7 +26,7 @@ class Core():
             return MemSeq(mem_size, block_size, disk, disk_org)
         elif disk_org == ORG.LSM:
             # mem_size = blocks_per_ss * lru_size * block_size
-            return MemLSM(disk, block_size, blocks_per_ss, math.floor(mem_size/(blocks_per_ss * block_size)))
+            return MemLSM(disk, block_size, math.floor(mem_size/(blocks_per_ss * block_size)))
 
 
     def run(self, insts: list):
@@ -39,12 +39,11 @@ class Core():
             print(f"=> {ret}")
         self.mem.print_cache()
         self.mem.flush()
-        if disk_org == ORG.LSM:
-            self.storage.kill_all_compaction_threads()
+        if self.disk_org == ORG.LSM:
+            self.disk.kill_all_compaction_threads()
 
     def exec_inst(self, inst: Instruction):
         if isinstance(inst, str):
-            print(inst)
             return
 
         if inst.action == ACTION.RETRIEVE_BY_ID:
@@ -66,7 +65,8 @@ class Core():
         if self.disk_org == ORG.SEQ:
             ret = self.mem.retrieve_rec(table=table, rec_id=rec_id, field_name="id", is_primary=True)
         elif self.disk_org == ORG.LSM:
-            ret = [self.mem.read_rec(table, str(rec_id))]
+            ret = self.mem.read_rec(table, str(rec_id))
+            ret = [] if ret is None else [ret]
         return ret
 
     def read_area_code(self, table: str, area_code: int):
@@ -79,7 +79,17 @@ class Core():
     def write(self, table: str, record: Record):
         if not self.table_exists(table) and self.disk_org == ORG.SEQ:
             self.create_table(table)
-        self.mem.write_rec(table, record)
+
+        if self.disk_org == ORG.LSM:
+            self.mem.write_rec(table, record)
+        elif self.disk_org == ORG.SEQ:
+            res = self.read_id(table, record.id)
+            if len(res) == 0:
+                self.mem.write_rec(table, record)
+            elif len(res) == 1:
+                self.mem.update_rec(table, record)
+            else:
+                raise Exception("multiple records with same id")
 
     def delete_record(self, table: str, rec_id: int):
         self.mem.delete_rec(table, rec_id)

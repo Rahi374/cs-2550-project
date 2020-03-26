@@ -21,7 +21,7 @@ import sys
 
 class MemLSM():
 
-    def __init__(self, storage, block_size = 64, blocks_per_SS = 3, LRU_size = 3):
+    def __init__(self, storage, block_size = 64, LRU_size = 3):
         self.num_of_memtbls = 0
         
         self.storage = storage

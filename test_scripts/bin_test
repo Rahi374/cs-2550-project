@@ -1,0 +1,46 @@
+R X 1
+R Y 1
+# Should not Retrieve anything since there are no X and Y table yet.
+W X (1, JohnX1, 412-001-0001)
+W Y (2, JohnY2, 412-002-0002)
+# Should write Record ID=1 into Table X and Record ID=2 into Table Y.
+W X (2, JohnX2, 412-001-0001)
+# Should write Record ID=2 into Table X.
+M X 412
+# Should retrieve JohnX1 and JohnX2.
+M Y 412
+# Should Retrieve JohnY2. 
+E Y 2 
+# Should Delete JohnY2
+M Y 412
+# Should return Nothing
+R Y 2
+# Should return Nothing
+W X (1, New_JohnX1, 412-001-0001)
+# Update JohnX1 to New_JohnX1
+R X 1
+# Should Return New_JohnX1
+M X 412
+# Should Return New_JohnX1 and JohnX2.
+W X (2, New_JohnX2, 724-001-0001)
+# Should Update JohnX2 to New_JohnX2 with new phone number
+R X 2
+# Should New_JohnX2 with its new record.
+M X 412
+# Should return Just New_JohnX1
+M X 724 
+# Should Return Just New_JohnX2
+M Y 412
+# Should Return Nothing
+M Y 724
+# Should Return Nothing
+R Y 1 
+# Should Return Nothing
+R Y 2 
+# Should Return Nothing
+W WOAH_NEW_TABLE_STR (1, new_table, 412-111-1111)
+R WOAH_NEW_TABLE_STR 1
+# Should Return the new record in the new table
+D WOAH_NEW_TABLE_STR
+R WOAH_NEW_TABLE_STR 1
+# Should return nothing because table got deleted

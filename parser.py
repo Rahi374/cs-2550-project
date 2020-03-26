@@ -12,7 +12,7 @@ class Parser():
         line_num = 1
         for line in lines:
             if line[0] == "#":
-                instructions.append(line)
+                instructions.append(line.strip())
                 line_num +=1
                 continue
             split_line = line.split()
