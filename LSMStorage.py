@@ -215,7 +215,7 @@ class LSMStorage():
         records_to_write = len(records)
         c = 0 #file number
         i = 0 #record number
-        create_log_str = "CREATE "+level+" K-"+str(lower)+"-"+str(upper)
+        create_log_str = "CREATE "+level+" K-"+table_name+str(lower)+"-"+table_name+str(upper)
         Logger.log(create_log_str)
         while records_to_write > 0:
             if records_to_write < records_per_block:
