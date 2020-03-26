@@ -31,15 +31,15 @@ if disk_org == ORG.LSM and args.blocks_per_ss is None:
     print("block_per_ss must be specified if disk_org is LSM")
     sys.exit()
 
-if disk_org == ORG.SEQ and (int(args.mem_size) < int(args.block_size) or int(args.mem_size) % int(args.block_size) != 0):
+if disk_org == ORG.SEQ and (args.mem_size < args.block_size or args.mem_size % args.block_size != 0):
     print(f"mem_size must be multiple of block_size")
     sys.exit()
 
-if disk_org == ORG.LSM and int(args.mem_size) % (int(args.block_size) * int(args.blocks_per_ss)) != 0:
-    print(f"mem_size must be multiple of {int(args.block_size) * int(args.blocks_per_ss)}")
+if disk_org == ORG.LSM and args.mem_size % (args.block_size * args.blocks_per_ss) != 0:
+    print(f"mem_size must be multiple of {args.block_size * args.blocks_per_ss}")
     sys.exit()
 
 real_insts = Parser.parse(args.instruction_file)
 
-core = Core(disk_org, int(args.mem_size), int(args.block_size), None if args.blocks_per_ss is None else int(args.blocks_per_ss))
+core = Core(disk_org, args.mem_size, args.block_size, None if args.blocks_per_ss is None else args.blocks_per_ss)
 core.run(real_insts)
