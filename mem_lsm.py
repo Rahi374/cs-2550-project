@@ -29,6 +29,7 @@ class MemLSM():
         self.page_table = {}
         self.LRU_size = LRU_size
 
+    # returns 0 for not found, -1 for deleted, or Record for found
     def _bsearch(self, recs: list, key):
         if not recs:
             return -1 
@@ -46,7 +47,7 @@ class MemLSM():
                 r = m - 1
             else:
                 if recs[m].id < 0:
-                    return None
+                    return -1
                 # print('recs[m] ', recs[m])
                 return recs[m]
             m = int(l + (r - l) / 2)
@@ -56,6 +57,10 @@ class MemLSM():
     def _get_area_recs(self, recs: list, area: str, pks: set, found: list):
         for r in recs:
             if r.id in pks:
+                continue
+
+            if r.id < 0:
+                pks.add(abs(r.id))
                 continue
             
             if int(r.phone[:3]) == int(area):
@@ -92,6 +97,7 @@ class MemLSM():
             memtbl.add_record(rec)
     
     def _level_read_rec(self, level: list, rec_id):
+        rec = None
         for i in range(len(level)):
             rec = self._bsearch(self._ba_2_recs(level[i]), rec_id)
 
@@ -101,7 +107,7 @@ class MemLSM():
                 ba = level.pop(i)
                 level.append(ba)
                 return rec
-        return None
+        return rec
 
     def _level_read_recs(self, level: list, area: str, pks, found):
         for i in range(len(level)):
@@ -162,13 +168,13 @@ class MemLSM():
         else:
             LRU = self.page_table[tbl_name]
             rec = self._level_read_rec(LRU[0], rec_id)
-            if rec is not None:
+            if (isinstance(rec, int) and rec == -1) or isinstance(rec, Record):
                 return rec
             rec = self._level_read_rec(LRU[1], rec_id)
-            if rec is not None:
+            if (isinstance(rec, int) and rec == -1) or isinstance(rec, Record):
                 return rec
             rec = self._level_read_rec(LRU[2], rec_id)
-            if rec is not None:
+            if (isinstance(rec, int) and rec == -1) or isinstance(rec, Record):
                 return rec
 
         #search in storage

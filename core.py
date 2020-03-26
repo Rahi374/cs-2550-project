@@ -66,7 +66,7 @@ class Core():
             ret = self.mem.retrieve_rec(table=table, rec_id=rec_id, field_name="id", is_primary=True)
         elif self.disk_org == ORG.LSM:
             ret = self.mem.read_rec(table, str(rec_id))
-            ret = [] if ret is None else [ret]
+            ret = [] if ret is -1 or ret is 0 else [ret]
         return ret
 
     def read_area_code(self, table: str, area_code: int):
