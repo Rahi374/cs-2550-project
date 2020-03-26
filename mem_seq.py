@@ -33,34 +33,39 @@ class MemSeq():
         records = None
         if is_primary:
             records = self.cache.search_by_id(table, rec_id)
+            if records is None:
+                records = self.__walk_storage_for_records(table, rec_id, field_name, is_primary)
+            return records if records is not None else []
         else:
             # rec_id is the field value that you're searching for
             records = self.cache.search_by_area_code(table, rec_id, field_name)
+            extra_records = self.__walk_storage_for_records(table, rec_id, field_name, is_primary)
 
-        new_records = []
-        if records == None or not is_primary:
-            new_records = self.__walk_storage_for_records(table, rec_id, field_name, is_primary)
+            if records is None and extra_records is None:
+                return []
+            elif records is None:
+                ret_records = extra_records
+            elif extra_records is None:
+                ret_records = records
+            else:
+                ret_records = records + extra_records
 
-        ret_records = records + new_records if records is not None else new_records
-        if ret_records is None:
-            return []
-
-        return list(set(ret_records))
+            return list(set(ret_records))
 
     def write_rec(self, table: str, rec: Record):
         # Find a slotted_page on cache to write into
         key = self.cache.available_slotted_page(table)
         if key is not None:
-            self.cache[key]['slotted_page'].insert(rec)
-            self.cache[key]['last_used'] = datetime.now() 
+            self.cache.cache_dic[key]['slotted_page'].insert(rec)
+            self.cache.cache_dic[key]['last_used'] = datetime.now() 
             return
         
         # Find a slotted_page on disk to write into if mem's slotted page is ALL full
         # Cache eviction will happen if cache is full regardless of if an slotted_page block is found or not
         block_id = self.__find_available_slotted_page(table)
         if block_id is not None:
-            self.cache[(table, int(block_id))]['slotted_page'].insert(rec)
-            self.cache[(table, int(block_id))]['last_used'] = datetime.now()
+            self.cache.cache_dic[(table, int(block_id))]['slotted_page'].insert(rec)
+            self.cache.cache_dic[(table, int(block_id))]['last_used'] = datetime.now()
             return
 
         # Create a new slotted page
@@ -97,13 +102,11 @@ class MemSeq():
         slotted_page = self.cache.search_slotted_page_by_rec_id(table, rec_id)
         if slotted_page is not None:
             slotted_page.delete(rec_id)
-            return
 
         # Record's block is missing in cache. Search for it in storage and bring it to cache
         slotted_page = self.__walk_storage_for_slotted_page(table, rec_id)
         if slotted_page is not None:
             slotted_page.delete(rec_id)
-            return 
 
         # If slotted_page is None, then something is wrong with our code. 
         # Core shouldnt be able to delete a record that is not found anywhere
@@ -164,7 +167,8 @@ class MemSeq():
                 for record in slotted_page.records:
                     if record is not None and record.id == rec_id: # Searching on primary key
                         self.cache.cache(table_name, block_id, slotted_page)
-                        return self.cache[(table_name, block_id)]['slotted_page']
+                        ret = self.cache.cache_dic[(table_name, block_id)]['slotted_page']
+                        return ret
         
         # Not in Storage
         return None
@@ -186,7 +190,8 @@ class MemSeq():
 
                 slotted_page = SlottedPage(self.block_size, ba)
                 if slotted_page.has_space():
-                    self.cache.cache(table_name, block_id, slotted_page)
+                    if (table_name, block_id) not in self.cache.cache_dic.keys():
+                        self.cache.cache(table_name, block_id, slotted_page)
                     return block_id
 
         return None
@@ -200,6 +205,14 @@ class MemSeq():
                 block_id = int(disk_block.split("_")[1].split(".")[0])
                 if block_id > highest_block_id:
                     highest_block_id = block_id 
+
+        keys = self.cache.cache_dic.keys()
+        for key in keys:
+            if key[0] != table_name:
+                continue
+            block_id = key[1]
+            if block_id > highest_block_id:
+                highest_block_id = block_id
 
         return highest_block_id + 1
 
