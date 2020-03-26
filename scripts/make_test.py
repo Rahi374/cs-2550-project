@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-for i in range(5000):
+for i in range(500):
     if i % 2 == 0:
         phone = "412-888-8888" 
     else:
@@ -8,6 +8,6 @@ for i in range(5000):
     text = "W tbl1 ("+str(i)+", name"+str(i)+", "+phone+")"
     print(text)
 
-for i in range(5000):
+for i in range(500):
     text = "R tbl1 "+str(i)+""
     print(text)

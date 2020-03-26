@@ -141,10 +141,10 @@ class LSMStorage():
         all_records = memtable.get_in_order_records()
         lower, upper = all_records[0].id, all_records[-1].id
         self.write_records_to_level_SST(all_records, memtable.tbl_name, lower, upper, "L0")
-        print("count of tables is: "+str(self.metadata_counts[table_name+"L0"]))
+        #print("count of tables is: "+str(self.metadata_counts[table_name+"L0"]))
         if self.metadata_counts[table_name+"L0"] >= 4: #compact L0 if no more room
             if self.metadata_counts[table_name+"L1"] >= 6:#if L1 would not be able to take L0, compact it
-                print("need to compact L1")
+                #print("need to compact L1")
                 self.compact_L1(table_name)
             self.compact_L0(table_name)
 
@@ -174,7 +174,6 @@ class LSMStorage():
             #L1_lock.release()
             #print("l1 lock released 2")
             #L0_lock.release()
-            print("l0 lock released 2")
         except Exception as e:
             print(e)
             print("exception in deletion of table")
@@ -230,7 +229,7 @@ class LSMStorage():
 
 
     def check_level_for_rec(self, record_id, table_name, level):
-        level_lock = self.level_to_lock_hm[level][table_name]
+        #level_lock = self.level_to_lock_hm[level][table_name]
         #level_lock.acquire()
         #print("level: "+level+" lock acquired 333")
         #print("done acquiring locks for 333")
@@ -242,7 +241,7 @@ class LSMStorage():
             if lower <= int(record_id) and upper >= int(record_id):
                 rec, ss = self.check_sst_for_record(record_id, table_name, level, s)
                 if ss != -1:
-                    level_lock.release()
+                    #level_lock.release()
                     return rec, ss
         #level_lock.release()
         #print("level: "+level+" lock released 333")
@@ -366,7 +365,6 @@ class LSMStorage():
         #L0_lock.release()
         self.write_L0_records_to_L1(list_of_records, table_name)
         self.metadata_counts[table_name+"L0"] = 0
-        print("compact L0 finished")
         return
 
 
@@ -376,7 +374,6 @@ class LSMStorage():
         self.remove_duplicate_level_entries(recs, table_name, "L1")
         
 
-        print("write l0 to l1")
         list_of_records = []
         dir_of_L1 = "storage/"+table_name+"/L1"
         for sst in os.listdir(dir_of_L1):
@@ -417,7 +414,6 @@ class LSMStorage():
 
 
     def compact_L1(self, table_name):
-        print("compact l1 running")
         #L1_lock = self.L0_lock_hm[table_name]
         #L2_lock = self.L1_lock_hm[table_name]
         #L1_lock.acquire()
