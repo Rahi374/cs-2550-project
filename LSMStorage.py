@@ -238,12 +238,9 @@ class LSMStorage():
         return rec, ss
 
     def check_sst_for_record(self, record_id, table_name, level, sst):
-        print("looking for record id:"+record_id.strip())
         dir_path = "storage/"+table_name+"/"+level+"/"+sst
-        print("checking "+dir_path)
         blocks = os.listdir(dir_path)
         for b in blocks:
-            print("checking block: "+b)
             f = open(dir_path+"/"+b, "rb")
             b_arr = bytearray(f.read())
             num_recs = int(b.split("_")[1])
@@ -251,16 +248,7 @@ class LSMStorage():
             for i in range(num_recs):
                 start_of_rec = i*get_size_of_records()
                 record = Record(ba=b_arr[start_of_rec:start_of_rec+RECORD_SIZE])
-                print("the record we are checking is id:"+str(record.id))
-                print("record.id type and value")
-                print(type(record.id))
-                print(record.id)
-                print("record_id")
-                print(record_id)
-                print(type(record_id))
-                if record.id == record_id:
-                    print("we found a match")
-                    x = input("found it, hit a button to continue")
+                if record.id == int(record_id):
                     f.close()
                     return record, self.get_sst_as_b_arr(table_name, level, sst)
 
