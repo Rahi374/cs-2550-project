@@ -54,6 +54,7 @@ class LSMStorage():
             print("no table")
             return -1
         else:
+            record_id = record_id.strip()
             rec, ss = self.check_level_for_rec(record_id, table_name, "L0")
             if ss == -1:
                 rec, ss = self.check_level_for_rec(record_id, table_name, "L1")
@@ -247,7 +248,7 @@ class LSMStorage():
             for i in range(num_recs):
                 start_of_rec = i*get_size_of_records()
                 record = Record(ba=b_arr[start_of_rec:start_of_rec+RECORD_SIZE])
-                if record.id == record_id:
+                if record.id == int(record_id):
                     f.close()
                     return record, self.get_sst_as_b_arr(table_name, level, sst)
 

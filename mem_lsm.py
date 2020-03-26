@@ -32,11 +32,12 @@ class MemLSM():
     def _bsearch(self, recs: list, key):
         if not recs:
             return -1 
-            
+        key = int(key)
         l = 0
         r = len(recs)
-        while l <= r:
-            m = int(l + (r - l) / 2)
+        m = int(l + (r - l) / 2)
+        # print(recs)
+        while l <= r and m < len(recs) and m >= 0:
             m_key = abs(recs[m].id)
             # print(l, m, r, m_key)
             if m_key < key:
@@ -48,6 +49,7 @@ class MemLSM():
                     return -1
                 # print('recs[m] ', recs[m])
                 return recs[m]
+            m = int(l + (r - l) / 2)
             
         return 0
 
