@@ -37,12 +37,13 @@ class MemSeq():
             # rec_id is the field value that you're searching for
             records = self.cache.search_by_area_code(table, rec_id, field_name)
 
+        new_records = []
         if records == None or not is_primary:
             new_records = self.__walk_storage_for_records(table, rec_id, field_name, is_primary)
 
         ret_records = records + new_records if records is not None else new_records
         if ret_records is None:
-            return ret_records
+            return []
 
         return list(set(ret_records))
 
@@ -201,7 +202,7 @@ class MemSeq():
 
         return highest_block_id + 1
 
-    def delete_table_in_mem(self, table_name: str):
+    def delete_table(self, table_name: str):
         self.cache.delete_table(table_name)
 
     def flush(self):

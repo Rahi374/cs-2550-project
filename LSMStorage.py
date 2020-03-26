@@ -43,7 +43,7 @@ class LSMStorage():
 
 
     def get_record(self, record_id, table_name):
-        table_exists = self.check_if_table_exists(table_name)
+        table_exists = self.table_exists(table_name)
         level = 0
 
         if not table_exists:
@@ -62,7 +62,7 @@ class LSMStorage():
             return rec, ss, 2
 
     def get_records(self, area_code, table_name, hm_keys_found, rec_list):
-        table_exists = self.check_if_table_exists(table_name)
+        table_exists = self.table_exists(table_name)
         if not table_exists:
             print("no table")
             return -1
@@ -109,7 +109,7 @@ class LSMStorage():
         return match_found
 
     def build_memtable(self, table_name):
-        table_exists = self.check_if_table_exists(table_name)
+        table_exists = self.table_exists(table_name)
         if not table_exists:
             self.metadata_counts[table_name+"L0"] = 0
             self.metadata_counts[table_name+"L1"] = 0
@@ -152,6 +152,9 @@ class LSMStorage():
 
 
     def delete_table(self, table_name):
+        if not self.table_exists(table_name):
+            return
+
         try:
             L0_lock = self.L0_lock_hm[table_name]
             L1_lock = self.L1_lock_hm[table_name]
@@ -161,7 +164,6 @@ class LSMStorage():
             L2_lock.acquire()
             self.thread_should_run[table_name] = False
             shutil.rmtree('storage/'+table_name)
-            os.rmdir('storage/'+table_name)
             L2_lock.release()
             L1_lock.release()
             L0_lock.release()
@@ -172,7 +174,7 @@ class LSMStorage():
 
 
     #private methods
-    def check_if_table_exists(self, table_name):
+    def table_exists(self, table_name):
         return os.path.isdir('storage/'+table_name)
 
     def create_table_structure(self, table_name):
@@ -317,6 +319,9 @@ class LSMStorage():
         L1_lock = self.L1_lock_hm[table_name]
         L2_lock = self.L2_lock_hm[table_name]
         while True:
+            should_still_run = self.thread_should_run[table_name]
+            if not should_still_run:
+                break
             L1_lock.acquire()
             L2_lock.acquire()
             self.compact_L1(table_name)

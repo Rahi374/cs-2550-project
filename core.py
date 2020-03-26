@@ -1,27 +1,32 @@
 from common import *
 from enum import Enum
 from inst import Instruction
+import math
+from mem_lsm import MemLSM
 from mem_seq import MemSeq
 from record import Record
 from storage import Storage
+from LSMStorage import LSMStorage
 
 class Core():
 
-    def __init__(self, disk_org: ORG, mem_size: int, block_size: int):
-        self.disk = self.create_storage(block_size, disk_org)
-        self.mem = self.create_memory(mem_size, block_size, self.disk, disk_org)
+    def __init__(self, disk_org: ORG, mem_size: int, block_size: int, blocks_per_ss: int):
+        self.disk = self.create_storage(block_size, blocks_per_ss, disk_org)
+        self.mem = self.create_memory(mem_size, block_size, blocks_per_ss, self.disk, disk_org)
+        self.disk_org = disk_org
 
-    def create_storage(self, block_size: int, disk_org: ORG):
+    def create_storage(self, block_size: int, blocks_per_ss: int, disk_org: ORG):
         if disk_org == ORG.SEQ:
             return Storage(disk_org, block_size)
         elif disk_org == ORG.LSM:
-            return Storage(disk_org, block_size)
+            return LSMStorage(block_size, blocks_per_ss)
 
-    def create_memory(self, mem_size: int, block_size: int, disk: Storage, disk_org: ORG):
+    def create_memory(self, mem_size: int, block_size: int, blocks_per_ss: int, disk: Storage, disk_org: ORG):
         if disk_org == ORG.SEQ:
             return MemSeq(mem_size, block_size, disk, disk_org)
         elif disk_org == ORG.LSM:
-            return Mem(disk, mem_size, block_size)
+            # mem_size = blocks_per_ss * lru_size * block_size
+            return MemLSM(disk, block_size, blocks_per_ss, math.floor(mem_size/(blocks_per_ss * block_size)))
 
 
     def run(self, insts: list):
@@ -30,8 +35,8 @@ class Core():
             try:
                 ret = self.exec_inst(inst)
             except Exception as e:
-                print(e)
-            print(f"Returned: {ret}")
+                ret = e
+            print(f"=> {ret}")
         self.mem.print_cache()
         self.mem.flush()
 
@@ -56,13 +61,21 @@ class Core():
             return self.delete_table(inst.table_name)
 
     def read_id(self, table: str, rec_id: int):
-        return self.mem.retrieve_rec(table=table, rec_id=rec_id, field_name="id", is_primary=True)
+        if self.disk_org == ORG.SEQ:
+            ret = self.mem.retrieve_rec(table=table, rec_id=rec_id, field_name="id", is_primary=True)
+        elif self.disk_org == ORG.LSM:
+            ret = [self.mem.read_rec(table, str(rec_id))]
+        return ret
 
     def read_area_code(self, table: str, area_code: int):
-        return self.mem.retrieve_rec(table=table, rec_id=area_code, field_name="area_code", is_primary=False)
+        if self.disk_org == ORG.SEQ:
+            ret = self.mem.retrieve_rec(table=table, rec_id=area_code, field_name="area_code", is_primary=False)
+        elif self.disk_org == ORG.LSM:
+            ret = self.mem.read_recs(table, str(area_code))
+        return ret
 
     def write(self, table: str, record: Record):
-        if not self.table_exists(table):
+        if not self.table_exists(table) and self.disk_org == ORG.SEQ:
             self.create_table(table)
         self.mem.write_rec(table, record)
 
@@ -70,7 +83,7 @@ class Core():
         self.mem.delete_rec(table, rec_id)
 
     def delete_table(self, table: str):
-        self.mem.delete_table_in_mem(table)
+        self.mem.delete_table(table)
         self.disk.delete_table(table)
 
     def create_table(self, table: str):

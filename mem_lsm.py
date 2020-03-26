@@ -21,11 +21,10 @@ import sys
 
 class MemLSM():
 
-    def __init__(self, SS_per_LRU = 4, block_size = 64, blocks_per_SS = 4, LRU_size = 3):
-        self.SS_per_LRU = SS_per_LRU
+    def __init__(self, storage, block_size = 64, blocks_per_SS = 4, LRU_size = 3):
         self.num_of_memtbls = 0
         
-        self.storage = LSM(block_size, blocks_per_SS)  
+        self.storage = storage
         self.memtbls = {}
         self.page_table = {}
         self.LRU_size = LRU_size
@@ -36,7 +35,7 @@ class MemLSM():
             
         l = 0
         r = len(recs)
-        while l < r:
+        while l <= r:
             m = int(l + (r - l) / 2)
             m_key = abs(recs[m].id)
             # print(l, m, r, m_key)
@@ -52,7 +51,7 @@ class MemLSM():
             
         return 0
 
-    def _get_area_recs(self, recs:list, area, pks:set, found:list):
+    def _get_area_recs(self, recs: list, area: str, pks: set, found: list):
         for r in recs:
             if r.id in pks:
                 continue
@@ -99,7 +98,7 @@ class MemLSM():
                 return rec
         return -1
 
-    def _level_read_recs(self, level: list, area, pks, found):
+    def _level_read_recs(self, level: list, area: str, pks, found):
         for i in range(len(level)):
             self._get_area_recs(self._ba_2_recs(level[i]), area, pks, found)
         # print('level_read_recs: ', found)
@@ -147,7 +146,7 @@ class MemLSM():
             memtbl = self.memtbls[tbl_name]
             recs = memtbl.get_in_order_records()
             # print(recs)
-            rec = self._bsearch(recs, rec_id)
+            rec = self._bsearch(recs, int(rec_id))
             if rec:
                 return rec
         
@@ -171,18 +170,19 @@ class MemLSM():
 
         #search in storage
         rec, ba, level = self.storage.get_record(rec_id, tbl_name)
+        if ba == -1:
+            return rec
         #update the page table
         self._check_evict(tbl_name, level, ba)
         return rec
     
 
-    def del_tbl(self, tbl_name:str):
-        #remove from memtbl if exists
+    def delete_table(self, tbl_name: str):
+        # remove from memtbl if exists
         self.memtbls.pop(tbl_name, None)
-        #remove from LRU if exists
+        # remove from LRU if exists
         self.page_table.pop(tbl_name, None)
-        #remove from storage
-        self.storage.delete_table(tbl_name)
+        # remove from storage - core already calls storage::remove_table()
 
 
     def read_recs(self, tbl_name: str, area: str):
@@ -225,7 +225,8 @@ class MemLSM():
         
         return found
 
+    def flush(self):
+        print("LSM flushing")
 
-
-        
-        
+    def print_cache(self):
+        print("LSM cache")

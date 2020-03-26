@@ -21,10 +21,14 @@ class Storage():
 
     def create_table(self, tbl_name: str):
         path = self.mnt_path + tbl_name + '/'
+        if os.path.exists(path):
+            return
         os.mkdir(path)
         self.rm_dir_readonly(path)
 
     def delete_table(self, tbl_name: str, cascade = True):
+        if not self.table_exists(tbl_name):
+            return
         if cascade:
             shutil.rmtree(self.mnt_path + tbl_name + '/')
         else:
