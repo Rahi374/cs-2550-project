@@ -33,26 +33,6 @@ if disk_org == ORG.LSM and int(mem_size) % (int(block_size) * int(blocks_per_ss)
     sys.exit()
 
 real_insts = Parser.parse(instr_file)
-insts = [
-        Instruction(ACTION.RETRIEVE_BY_ID,        "X", 13),
-        Instruction(ACTION.RETRIEVE_BY_ID,        "Y", 7),
-        Instruction(ACTION.WRITE_RECORD,          "Y", Record(5, "John", "412-111-2222")),
-        Instruction(ACTION.RETRIEVE_BY_AREA_CODE, "Y", 609),
-        Instruction(ACTION.WRITE_RECORD,          "X", Record(2, "Thalia", "412-656-2212")),
-        Instruction(ACTION.WRITE_RECORD,          "X", Record(3, "Bin", "412-555-2121")),
-        Instruction(ACTION.RETRIEVE_BY_AREA_CODE, "X", 412),
-        #Instruction(ACTION.DELETE_TABLE,          "Y"),
-        ]
-
-insts2 = [
-        Instruction(ACTION.WRITE_RECORD,          "X", Record(1, "Alex", "412-111-1111")),
-        Instruction(ACTION.WRITE_RECORD,          "X", Record(2, "Bob", "412-222-2222")),
-        Instruction(ACTION.RETRIEVE_BY_ID,        "X", 1),
-        #Instruction(ACTION.DELETE_RECORD,         "Y", 5),
-        Instruction(ACTION.WRITE_RECORD,          "Y", Record(3, "Bin", "412-555-2121")),
-        Instruction(ACTION.DELETE_TABLE,          "Y"),
-        Instruction(ACTION.RETRIEVE_BY_AREA_CODE, "X", 412),
-]
 
 core = Core(disk_org, int(mem_size), int(block_size), None if blocks_per_ss is None else int(blocks_per_ss))
 core.run(real_insts)
