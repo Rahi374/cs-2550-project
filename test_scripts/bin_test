@@ -41,6 +41,6 @@ R Y 2
 W WOAH_NEW_TABLE_STR (1, new_table, 412-111-1111)
 R WOAH_NEW_TABLE_STR 1
 # Should Return the new record in the new table
-D WOAH_NEW_TABLE 
+D WOAH_NEW_TABLE_STR
 R WOAH_NEW_TABLE_STR 1
 # Should return nothing because table got deleted
