@@ -96,9 +96,10 @@ class LSMStorage():
             b_arr = bytearray(f.read())
             for i in range(num_recs):
                 start_of_rec = i * get_size_of_records()
-                rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
-                rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
-                rec_phone_num = b_arr[start_of_rec+20:start_of_rec+32].decode()
+                record = Record(ba=b_arr[start_of_rec:start_of_rec+RECORD_SIZE])
+                rec_id = record.id
+                rec_name = record.client_name
+                rec_phone_num = record.phone
                 rec_area_code = rec_phone_num.split("-")[0]
 
                 if rec_area_code == str(area_code):
@@ -245,12 +246,10 @@ class LSMStorage():
             rec_num = 0
             for i in range(num_recs):
                 start_of_rec = i*get_size_of_records()
-                rec_id = int.from_bytes(b_arr[start_of_rec:start_of_rec+4], byteorder="little", signed=True)
-                if rec_id == record_id:
-                    rec_name = b_arr[start_of_rec+4:start_of_rec+20].decode()
-                    rec_phone = b_arr[start_of_rec+20:start_of_rec+32].decode()
+                record = Record(ba=b_arr[start_of_rec:start_of_rec+RECORD_SIZE])
+                if record.id == record_id:
                     f.close()
-                    return Record(rec_id, rec_name, rec_phone), self.get_sst_as_b_arr(table_name, level, sst)
+                    return record, self.get_sst_as_b_arr(table_name, level, sst)
 
             f.close()
         return None, -1
