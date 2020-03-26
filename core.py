@@ -8,6 +8,7 @@ from mem_lsm import MemLSM
 from mem_seq import MemSeq
 from record import Record
 from storage import Storage
+import time
 
 class Core():
 
@@ -31,8 +32,9 @@ class Core():
 
 
     def run(self, insts: list):
+        start = time.time()
         for inst in insts:
-            print(f"Executing: {str(inst)}")
+            #print(f"Executing: {str(inst)}")
             if isinstance(inst, Instruction):
                 Logger.log(inst.to_log())
             try:
@@ -40,9 +42,11 @@ class Core():
                 self.print_result(inst, ret)
             except Exception as e:
                 ret = e
-            print(f"=> {ret}")
+            #print(f"=> {ret}")
         self.mem.print_cache()
         self.mem.flush()
+        done = time.time()
+        print(f"Time taken: {done - start}")
         if self.disk_org == ORG.LSM:
             self.disk.kill_all_compaction_threads()
         Logger.write_log()
