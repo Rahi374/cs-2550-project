@@ -119,6 +119,8 @@ class MemLSM():
             
     def _ba_2_recs(self, ba):
         res = []
+        if ba == None:
+            return None
         for i in range(math.floor(len(ba) / common.RECORD_SIZE)):
             rec = Record(ba = ba[i * common.RECORD_SIZE: (i + 1) * common.RECORD_SIZE])
             res.append(rec)
@@ -128,12 +130,14 @@ class MemLSM():
         l = self.page_table[tbl_name][level]
         out = None
         #evict if LRU is full
-        if len(l) == self.LRU_size:
+        if l is not None and len(l) == self.LRU_size:
             out = l.pop(0)
             
         #append to the end
         l.append(ba)
 
+        if out == None:
+            return
         ba = self._ba_2_recs(ba)
         out = self._ba_2_recs(out)
         #Logging
@@ -143,6 +147,8 @@ class MemLSM():
             Logger.log(f'SWAP OUT L-{level} {tbl_name}{abs(out[0].id)}-{tbl_name}{abs(out[-1].id)}')
     
     def _check_evicts(self, tbl_name, bas):
+        print(bas)
+        print("bas is above")
         for i in range(len(bas)):
             for ba in bas[i]:
                 self._check_evict(tbl_name, i, ba)
