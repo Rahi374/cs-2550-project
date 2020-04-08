@@ -1,4 +1,4 @@
-# main.py
+# main1.py
 import argparse
 from common import *
 from core import Core
