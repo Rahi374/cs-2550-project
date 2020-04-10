@@ -40,6 +40,8 @@ class Instruction():
             data = self.record_id
         elif self.action == ACTION.WRITE_RECORD:
             data = self.tuple_data
-        elif self.action == ACTION.DELETE_TABLE:
+        elif self.action == ACTION.DELETE_TABLE or \
+             self.action == ACTION.COMMIT or \
+             self.action == ACTION.ABORT:
             data = None
         return data
