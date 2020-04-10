@@ -147,8 +147,6 @@ class MemLSM():
             Logger.log(f'SWAP OUT L-{level} {tbl_name}{abs(out[0].id)}-{tbl_name}{abs(out[-1].id)}')
     
     def _check_evicts(self, tbl_name, bas):
-        print(bas)
-        print("bas is above")
         for i in range(len(bas)):
             for ba in bas[i]:
                 self._check_evict(tbl_name, i, ba)
