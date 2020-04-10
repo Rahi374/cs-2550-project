@@ -25,5 +25,5 @@ else:
     sys.exit(1)
 
 # instruction_file is a list of filenames
-scheduler = Scheduler(args.instruction_file)
-#scheduler.run()
+scheduler = Scheduler(sched_type, args.instruction_file, args.mem_size, args.block_size, args.blocks_per_ss)
+scheduler.run()
