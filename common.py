@@ -6,6 +6,14 @@ pp = pprint.PrettyPrinter(indent=4)
 
 RECORD_SIZE = 32
 
+class SCHED_TYPE(Enum):
+    RR = 0
+    RAND = 1
+
+class EXEC_TYPE(Enum):
+    PROCESS = 0
+    TRANSACTION = 1
+
 class ORG(Enum):
     SEQ = 1
     LSM = 2
