@@ -9,6 +9,7 @@ class Parser():
         instructions = []
         f = open(inst_file, 'r')
         lines = f.readlines()
+        f.close()
         line_num = 1
         for line in lines:
             if line[0] == "#":
