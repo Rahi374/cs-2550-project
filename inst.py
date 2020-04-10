@@ -3,7 +3,7 @@ from common import *
 
 class Instruction():
 
-    def __init__(self, action: ACTION, table_name: str, data=None):
+    def __init__(self, action: ACTION, table_name="", data=None):
         """
         data: either tuple_data or record_id
             - tuple_data: (int id, string client_name, string phone)
