@@ -24,13 +24,17 @@ class ACTION(Enum):
     WRITE_RECORD = 3
     DELETE_RECORD = 4
     DELETE_TABLE = 5
+    ABORT = 6
+    COMMIT = 7
 
 ACTION_WORDS = {
     ACTION.RETRIEVE_BY_ID: "Retrieve by ID",
     ACTION.RETRIEVE_BY_AREA_CODE: "Retrieve by area code",
     ACTION.WRITE_RECORD: "Write record",
     ACTION.DELETE_RECORD: "Delete record",
-    ACTION.DELETE_TABLE: "Delete table"
+    ACTION.DELETE_TABLE: "Delete table",
+    ACTION.ABORT: "Abort transaction",
+    ACTION.COMMIT: "Commit transaction"
 }
 
 ACTION_CODES = {
@@ -38,7 +42,9 @@ ACTION_CODES = {
     ACTION.RETRIEVE_BY_AREA_CODE: "M",
     ACTION.WRITE_RECORD: "W",
     ACTION.DELETE_RECORD: "E",
-    ACTION.DELETE_TABLE: "D"
+    ACTION.DELETE_TABLE: "D",
+    ACTION.ABORT: "A",
+    ACTION.COMMIT: "C"
 }
 
 def pad_bits(ba: BitArray, target_len: int):
