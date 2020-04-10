@@ -45,3 +45,6 @@ class Instruction():
              self.action == ACTION.ABORT:
             data = None
         return data
+
+    def __eq__(self, other):
+        return str(self) == str(other)
