@@ -56,7 +56,7 @@ class lock_manager(object):
             return True
         
         if lock.has_write_owner:
-            if not lock.is_trans_id_in_queue(trans_id)
+            if not lock.is_trans_id_in_queue(trans_id):
                 lock.enqueue_trans(trans_id, "r")
             return False
         else:
@@ -64,7 +64,7 @@ class lock_manager(object):
             if next_in_line[0] == trans_id:
                 return True
             else:
-                if not is_trans_id_in_queue(trans_id)
+                if not is_trans_id_in_queue(trans_id):
                     lock.enqueue_trans(trans_id, "r")
                 return False 
     
