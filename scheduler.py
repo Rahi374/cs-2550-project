@@ -119,7 +119,7 @@ class Scheduler:
                 can_acquire_lock = self.can_acquire_locks(self.seq_pc, inst)
                 if (self.lock_manager.detect_deadlock()):
                     inst = Instruction(ACTION.ABORT)
-                    self.do_lock_stuff(self.seq_pc, inst)
+                    self.do_lock_stuff(id(next_inst_seq), inst)
                     self.remove_current_seq()
                     continue
 
@@ -129,7 +129,7 @@ class Scheduler:
                     self.incr_seq_pc()
                     continue
 
-            self.run_inst(inst)
+            self.run_inst(inst, id(next_inst_seq))
             next_inst_seq.exec()
 
             # remove completed instruction sequences
