@@ -2,6 +2,7 @@ from common import *
 from core import Core
 from inst import Instruction
 from instruction_sequence import InstructionSequence
+from lock_manager import *
 from logger import Logger
 from parser import Parser
 import random
@@ -12,6 +13,7 @@ class Scheduler:
     sched_type = None
     seq_pc = 0
     core = None
+    lock_manager = None
 
     # TODO use the log
     log = []
@@ -31,6 +33,7 @@ class Scheduler:
         self.mem_size = mem_size
         self.block_size = block_size
         self.blocks_per_ss = blocks_per_ss
+        self.lock_manager = lock_manager()
         return
 
     def run_inst(self, inst):
@@ -58,39 +61,51 @@ class Scheduler:
         elif self.sched_type == SCHED_TYPE.RAND:
             self.seq_pc = random.randrange(len(self.instruction_sequence_sequences))
 
+    def do_undos(self):
+        return
+
     def can_acquire_locks(self, t_id, inst):
         if inst.action == ACTION.RETRIEVE_BY_ID:
-            return True
+            a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
+            b = self.lock_manager.is_tuple_read_lock_available(t_id, inst.record_id, inst.table_name)
+            return a and b
         if inst.action == ACTION.RETRIEVE_BY_AREA_CODE:
-            return True
+            return self.lock_manager.is_table_write_lock_available(t_id, inst.table_name)
         if inst.action == ACTION.WRITE_RECORD:
-            return True
+            a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
+            b = self.lock_manager.is_tuple_write_lock_available(t_id, inst.record_id, inst.table_name)
+            return a and b
         if inst.action == ACTION.DELETE_RECORD:
-            return True
+            a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
+            b = self.lock_manager.is_tuple_write_lock_available(t_id, inst.record_id, inst.table_name)
+            return a and b
         if inst.action == ACTION.DELETE_TABLE:
-            return True
+            return self.lock_manager.is_table_write_lock_available(t_id, inst.table_name)
         if inst.action == ACTION.ABORT:
-            return False
+            return True
         if inst.action == ACTION.COMMIT:
             return True
         return None
 
-    def do_acquire_lock(self, t_id, inst):
+    def do_lock_stuff(self, t_id, inst):
         if inst.action == ACTION.RETRIEVE_BY_ID:
-            return True
-        if inst.action == ACTION.RETRIEVE_BY_AREA_CODE:
-            return True
-        if inst.action == ACTION.WRITE_RECORD:
-            return True
-        if inst.action == ACTION.DELETE_RECORD:
-            return True
-        if inst.action == ACTION.DELETE_TABLE:
-            return True
-        if inst.action == ACTION.ABORT:
-            return False
-        if inst.action == ACTION.COMMIT:
-            return True
-        return None
+            self.lock_manager.table_read_lock(t_id, inst.table_name)
+            self.lock_manager.tuple_read_lock(t_id, inst.record_id, inst.table_name)
+        elif inst.action == ACTION.RETRIEVE_BY_AREA_CODE:
+            self.lock_manager.table_write_lock(t_id, inst.table_name)
+        elif inst.action == ACTION.WRITE_RECORD:
+            self.lock_manager.table_read_lock(t_id, inst.table_name)
+            self.lock_manager.tuple_write_lock(t_id, inst.record_id, inst.table_name)
+        elif inst.action == ACTION.DELETE_RECORD:
+            self.lock_manager.table_read_lock(t_id, inst.table_name)
+            self.lock_manager.tuple_write_lock(t_id, inst.record_id, inst.table_name)
+        elif inst.action == ACTION.DELETE_TABLE:
+            self.lock_manager.table_write_lock(t_id, inst.table_name)
+        elif inst.action == ACTION.ABORT:
+            self.lock_manager.unlock_all_locks_for_transaction(t_id)
+            self.do_undos()
+        elif inst.action == ACTION.COMMIT:
+            self.lock_manager.unlock_all_locks_for_transaction(t_id)
 
     def run(self):
         self.core = Core(ORG.LSM, self.mem_size, self.block_size, self.blocks_per_ss)
@@ -100,8 +115,16 @@ class Scheduler:
             inst = next_inst_seq.fetch()
 
             if next_inst_seq.exec_type == EXEC_TYPE.TRANSACTION:
-                if self.can_acquire_locks(self.seq_pc, inst):
-                    self.do_acquire_lock(self.seq_pc, inst)
+
+                can_acquire_lock = self.can_acquire_locks(self.seq_pc, inst)
+                if (self.lock_manager.detect_deadlock()):
+                    inst = Instruction(ACTION.ABORT)
+                    self.do_lock_stuff(self.seq_pc, inst)
+                    self.remove_current_seq()
+                    continue
+
+                if can_acquire_lock:
+                    self.do_lock_stuff(self.seq_pc, inst)
                 else:
                     self.incr_seq_pc()
                     continue
@@ -112,6 +135,7 @@ class Scheduler:
             # remove completed instruction sequences
             if next_inst_seq.completed():
                 self.remove_current_seq()
+                continue
 
             self.incr_seq_pc()
 
