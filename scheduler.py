@@ -61,8 +61,22 @@ class Scheduler:
         elif self.sched_type == SCHED_TYPE.RAND:
             self.seq_pc = random.randrange(len(self.instruction_sequence_sequences))
 
-    def do_undos(self):
-        return
+    def do_undos(self, t_id: int):
+        for log_entry in reversed(self.log):
+            if log_entry.t_id == t_id:
+
+                if inst.action == ACTION.WRITE_RECORD:
+                    if len(log_entry.before_image) == 0:
+                         self.core.delete_record(log_entry.inst.table_name, log_entry.inst.record_id)
+                    else:
+                         self.core.write(log_entry.inst.table_name, log_entry.before_image[0])
+
+                elif inst.action == ACTION.DELETE_RECORD:
+                    self.core.write(log_entry.inst.table_name, log_entry.before_image[0])
+
+                elif inst.action == ACTION.DELETE_TABLE:
+                    # TODO implement this
+                    self.core.restore_table(log_entry.inst.table_name, log_entry.before_image)
 
     def can_acquire_locks(self, t_id, inst):
         if inst.action == ACTION.RETRIEVE_BY_ID:
@@ -103,7 +117,7 @@ class Scheduler:
             self.lock_manager.table_write_lock(t_id, inst.table_name)
         elif inst.action == ACTION.ABORT:
             self.lock_manager.unlock_all_locks_for_transaction(t_id)
-            self.do_undos()
+            self.do_undos(t_id)
         elif inst.action == ACTION.COMMIT:
             self.lock_manager.unlock_all_locks_for_transaction(t_id)
 
