@@ -1,6 +1,7 @@
 from common import *
 from enum import Enum
 from inst import Instruction
+from log_entry import LogEntry
 from logger import Logger
 from LSMStorage import LSMStorage
 import math
@@ -69,6 +70,38 @@ class Core():
 
         if inst.action == ACTION.DELETE_TABLE:
             return self.delete_table(inst.table_name)
+
+    def exec_inst_phase2(self, inst: Instruction, t_id: int):
+        if isinstance(inst, str):
+            return
+
+        if inst.action == ACTION.RETRIEVE_BY_ID:
+            result = self.read_id(inst.table_name, inst.record_id)
+            return [LogEntry(result, result, inst, t_id), result]
+
+        if inst.action == ACTION.RETRIEVE_BY_AREA_CODE:
+            result = self.read_area_code(inst.table_name, inst.record_id)
+            return [LogEntry(result, result, inst, t_id), result]
+
+        if inst.action == ACTION.WRITE_RECORD:
+            before_image = self.read_id(inst.table_name, inst.tuple_data[0])
+            result = self.write(inst.table_name, inst.tuple_data)
+            after_image = self.read_id(inst.table_name, inst.tuple_data[0])
+            return [LogEntry(before_image, after_image, inst, t_id), result]
+
+        if inst.action == ACTION.DELETE_RECORD:
+            before_image = self.read_id(inst.table_name, inst.record_id)
+            result = self.delete_record(inst.table_name, inst.record_id)
+            after_image = self.read_id(inst.table_name, inst.record_id)
+            return [LogEntry(before_image, after_image, inst, t_id), result]
+
+        if inst.action == ACTION.DELETE_TABLE:
+            # TODO fix this for lsm
+            self.mem.flush()
+            # TODO implement this
+            before_image = self.mem.get_table_storage()
+            result = self.delete_table(inst.table_name)
+            return [LogEntry(before_image, None, inst, t_id), result]
 
     def read_id(self, table: str, rec_id: int):
         if self.disk_org == ORG.SEQ:
