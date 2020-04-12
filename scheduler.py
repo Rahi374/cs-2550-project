@@ -14,8 +14,6 @@ class Scheduler:
     seq_pc = 0
     core = None
     lock_manager = None
-
-    # TODO use the log
     log = []
 
     def load_sequences_from_files(self, instruction_files):
@@ -34,15 +32,17 @@ class Scheduler:
         self.block_size = block_size
         self.blocks_per_ss = blocks_per_ss
         self.lock_manager = lock_manager()
+        self.log = []
         return
 
-    def run_inst(self, inst):
+    def run_inst(self, inst, t_id):
        Logger.log(inst.to_log())
        try:
-           ret = self.core.exec_inst(inst)
+           log_entry, ret = self.core.exec_inst_phase2(inst, t_id)
            self.core.print_result(inst, ret)
+           log.append(log_entry)
        except Exception as e:
-           ret = e
+           pass
 
     def next_inst_seq(self):
         return self.instruction_sequence_sequences[self.seq_pc][0]
