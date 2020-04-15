@@ -43,7 +43,7 @@ class lock_manager(object):
     def is_read_lock_available(self, trans_id, key):
         lock = None
         if key not in self.locks:
-            lock = read_write_lock()
+            lock = ReadWriteLock()
             self.locks[key] = lock
         else:
             lock = self.locks[key]
@@ -68,7 +68,7 @@ class lock_manager(object):
                     lock.enqueue_trans(trans_id, "r")
 
                 next_in_line = lock.peek_queue()
-                if next_in_line is not None and next_in_line[0] == trans_id:
+                if not lock.has_write_owner and next_in_line is not None and next_in_line[0] == trans_id:
                     return True
                 return False 
     
@@ -76,7 +76,7 @@ class lock_manager(object):
     def is_write_lock_available(self, trans_id, key):
         lock = None
         if key not in self.locks:
-            lock = read_write_lock()
+            lock = ReadWriteLock()
             self.locks[key] = lock
         else:
             lock = self.locks[key]
@@ -88,15 +88,19 @@ class lock_manager(object):
         if lock.is_trans_id_write_owner(trans_id):
             return True
         
+        # check if nobody already owns the lock
         if len(lock.lock_owners) == 0:
             next_in_line = lock.peek_queue()
             if next_in_line is not None and next_in_line[0] == trans_id:
                 return True
+
+        # join the queue for the lock
         if not lock.is_trans_id_in_queue(trans_id):
             lock.enqueue_trans(trans_id, "w")
             next_in_line = lock.peek_queue()
-            if next_in_line is not None and next_in_line[0] == trans_id:
+            if len(lock.lock_owners) == 0 and next_in_line is not None and next_in_line[0] == trans_id:
                 return True
+
         return False
    
 
@@ -151,7 +155,7 @@ class lock_manager(object):
         return
 
 
-class read_write_lock(object):
+class ReadWriteLock(object):
     lock_owners = [] #can potentially be a list of multiple read owners for one write owner
     waiting_on_locks = [] #entries are [trans_id, "r"/"w"]
     has_write_owner = False
