@@ -45,7 +45,7 @@ class Core():
                 ret = e
             #print(f"=> {ret}")
         #self.mem.print_cache()
-        #self.mem.flush()
+        self.mem.flush()
         done = time.time()
         print(f"Time taken: {done - start}")
         if self.disk_org == ORG.LSM:
