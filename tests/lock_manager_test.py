@@ -14,6 +14,7 @@ class TestLockManager(unittest.TestCase):
 
         # test read lock acquiring
         lock_man.read_lock(0, "key0")
+        self.assertTrue(lock_man.is_read_lock_available(1, "key0"))
         lock_man.read_lock(1, "key0")
         self.assertFalse(lock_man.is_write_lock_available(2, "key0"))
 
