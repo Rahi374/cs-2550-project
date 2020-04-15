@@ -359,7 +359,7 @@ class LSMStorage():
                 os.remove(dir_of_L0+"/"+sst+"/"+b)
 
             os.rmdir(dir_of_L0+"/"+sst)
-        list_of_records = [r for r in list_of_records if r.id != -2]
+        list_of_records = [r for r in list_of_records if r.id > 0 or r.phone == "-1"]
         list_of_records.sort(key=lambda x: x.id)
         #L1_lock.release()
         #L0_lock.release()
@@ -393,7 +393,7 @@ class LSMStorage():
                 os.remove(dir_of_L1+"/"+sst+"/"+b)
 
             os.rmdir(dir_of_L1+"/"+sst)
-        list_of_records = [r for r in list_of_records if r.id != -2]
+        list_of_records = [r for r in list_of_records if r.id > 0 or r.phone == "-1"]
         for rec in recs:
             list_of_records.append(rec)
         list_of_records.sort(key=lambda x: x.id)
@@ -437,7 +437,7 @@ class LSMStorage():
                 os.remove(dir_of_L1+"/"+sst+"/"+b)
 
             os.rmdir(dir_of_L1+"/"+sst)
-        list_of_records = [r for r in list_of_records if r.id != -2]
+        list_of_records = [r for r in list_of_records if r.id > 0 or r.phone == "-1"]
         list_of_records.sort(key=lambda x: x.id)
         #L2_lock.release()
         #L1_lock.release()
@@ -473,7 +473,7 @@ class LSMStorage():
                 os.remove(dir_of_L2+"/"+sst+"/"+b)
 
             os.rmdir(dir_of_L2+"/"+sst)
-        list_of_records = [r for r in list_of_records if r.id != -2]
+        list_of_records = [r for r in list_of_records if r.id > 0 or r.phone == "-1"]
         for rec in recs:
             list_of_records.append(rec)
         list_of_records.sort(key=lambda x: x.id)

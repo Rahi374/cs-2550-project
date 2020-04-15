@@ -49,7 +49,7 @@ class lock_manager(object):
             lock = self.locks[key]
 
         if trans_id not in self.trans_id_to_locks:
-            self.trans_id_to_locks[trans_id] = Set()
+            self.trans_id_to_locks[trans_id] = set()
         self.trans_id_to_locks[trans_id].add(lock)
 
         if lock.is_trans_id_in_current_owners(trans_id):
@@ -61,11 +61,15 @@ class lock_manager(object):
             return False
         else:
             next_in_line = lock.peek_queue()
-            if next_in_line[0] == trans_id:
+            if next_in_line is not None and next_in_line[0] == trans_id:
                 return True
             else:
-                if not is_trans_id_in_queue(trans_id):
+                if not lock.is_trans_id_in_queue(trans_id):
                     lock.enqueue_trans(trans_id, "r")
+
+                next_in_line = lock.peek_queue()
+                if next_in_line is not None and next_in_line[0] == trans_id:
+                    return True
                 return False 
     
 
@@ -78,7 +82,7 @@ class lock_manager(object):
             lock = self.locks[key]
 
         if trans_id not in self.trans_id_to_locks:
-            self.trans_id_to_locks[trans_id] = Set()
+            self.trans_id_to_locks[trans_id] = set()
         self.trans_id_to_locks[trans_id].add(lock)
 
         if lock.is_trans_id_write_owner(trans_id):
@@ -86,10 +90,13 @@ class lock_manager(object):
         
         if len(lock.lock_owners) == 0:
             next_in_line = lock.peek_queue()
-            if next_in_line[0] == trans_id:
+            if next_in_line is not None and next_in_line[0] == trans_id:
                 return True
         if not lock.is_trans_id_in_queue(trans_id):
             lock.enqueue_trans(trans_id, "w")
+            next_in_line = lock.peek_queue()
+            if next_in_line is not None and next_in_line[0] == trans_id:
+                return True
         return False
    
 
@@ -99,7 +106,7 @@ class lock_manager(object):
             sys.exit(1)
         
         lock = self.locks[key]
-        if lock.is_trans_id_in_current_owners():
+        if lock.is_trans_id_in_current_owners(trans_id):
             return
 
         next_in_line = lock.peek_queue()
@@ -116,7 +123,7 @@ class lock_manager(object):
             sys.exit(1)
 
         lock = self.locks[key]
-        if lock.is_trans_id_write_owner():
+        if lock.is_trans_id_write_owner(trans_id):
             return
 
         next_in_line = lock.peek_queue()
@@ -190,7 +197,7 @@ class read_write_lock(object):
         del self.waiting_on_locks[0]
     
     def release_lock_by_transaction(self, trans_id):
-        if len(lock_owners) == 1 and lock_owners[0][0] == trans_id and lock_owners[0][1] == "w":
+        if len(self.lock_owners) == 1 and self.lock_owners[0][0] == trans_id and self.lock_owners[0][1] == "w":
             self.has_write_owner = False
         self.lock_owners = [t for t in self.lock_owners if t[0] != trans_id]
         self.waiting_on_locks = [t for t in self.waiting_on_locks if t[0] != trans_id]
