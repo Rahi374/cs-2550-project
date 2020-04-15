@@ -12,7 +12,7 @@ inst_seq = [
     Instruction(ACTION.RETRIEVE_BY_ID, 'X', 13),
     Instruction(ACTION.WRITE_RECORD, 'X', Record(2, "Thalia", "412-656-2212")),
     Instruction(ACTION.RETRIEVE_BY_ID, 'X', 2),
-    Instruction(ACTION.RETRIEVE_BY_AREA_CODE, 'X', "412")
+    Instruction(ACTION.RETRIEVE_BY_AREA_CODE, 'X', "412"),
     Instruction(ACTION.COMMIT)
 ]
 
