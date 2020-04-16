@@ -76,7 +76,7 @@ class Scheduler:
 
                 elif inst.action == ACTION.DELETE_TABLE:
                     # TODO implement this
-                    self.core.restore_table(log_entry.inst.table_name, log_entry.before_image)
+                    self.core.disk.restore_table(log_entry.inst.table_name, log_entry.before_image)
 
     def can_acquire_locks(self, t_id, inst):
         if inst.action == ACTION.RETRIEVE_BY_ID:

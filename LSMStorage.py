@@ -51,6 +51,74 @@ class LSMStorage():
         for thread_key in self.thread_should_run:
             self.thread_should_run[thread_key] = False
 
+    def restore_table(self, table_storage):
+        for e in table_storage.copy_metadata_ranges.keys():
+            self.metadata_ranges[e] = table_storage.copy_metadata_ranges[e]
+        for e in table_storage.copy_metadata_counts.keys():
+            self.metadata_counts[e] = table_storage.copy_metadata_counts[e]
+        os.mkdir(storage+"/"+table_storage.table_name)
+        self.write_storage_level(table_storage.table_name, "L0", table_storage.level_zero_ssts)
+        self.write_storage_level(table_storage.table_name, "L1", table_storage.level_one_ssts)
+        self.write_storage_level(table_storage.table_name, "L2", table_storage.level_two_ssts)
+        
+    def write_storage_levels(self, table_name, level, list_of_files):
+        level_dir = "storage/"+table_name+"/"+level
+        os.mkdir(level_dir)
+        for f_entry in list_of_files:
+            fname = f_entry[0]
+            fdata = f_entry[1]
+            f = open(fname, "wb+")
+            f.write(fdata)
+            f.close()
+
+    def get_table_storage(self, table_name):
+        table_exists = self.table_exists(table_name)
+        if not table_exists:
+            return
+        else:
+            zero, one, two = self.get_level_storage(table_name)
+            ranges = self.get_ranges(table_name)
+            counts = self.get_counts(table_name)
+            return TableStorage(table_name, ranges, counts, zero, one, two)
+
+    #return 3 lists, one for each level
+    #each list is a list of lists where entries are: ["filename":file_data]
+    def get_level_storage(self, table_name): 
+        table_dir = "storage/"+table_name
+        l0_dir = table_dir+"/L0"
+        l1_dir = table_dir+"/L1"
+        l2_dir = table_dir+"/L2"
+        l0_entries = self.get_entries(l0_dir)
+        l1_entries = self.get_entries(l1_dir)
+        l2_entries = self.get_entries(l2_dir)
+        return l0_entries, l1_entries, l2_entries
+
+    def get_entries(self, path):
+        all_files = []
+        for fname in os.listdir(path):
+            f = open(fname, "rb") 
+            data = bytearray(f.read())
+            f.close()
+            all_files.append([fname, data])
+        return all_files
+
+
+    def get_ranges(self, table_name):
+        partial_hm = {}
+        for e in self.metadata_ranges.keys():
+            if table_name in e:
+                partial_hm[e] = self.metadata_ranges[e]
+                del self.metadata_ranges[e]
+        return partial_hm
+
+    def get_counts(self, table_name):
+        partial_hm = {}
+        for e in self.metadata_counts.keys():
+            if table_name in e:
+                partial_hm[e] = self.metadata_counts[e]
+                del self.metadata_counts[e]
+        return partial_hm
+
     def get_record(self, record_id, table_name):
         table_exists = self.table_exists(table_name)
         level = 0
@@ -539,4 +607,13 @@ class MemTable(object):
 
 
 
+
+class TableStorage(object):
+    def __init__(self, table_name, ranges, counts, zero, one, two):
+        self.table_name = table_name
+        self.copy_metadata_ranges = ranges
+        self.copy_metadata_counts = counts
+        self.level_zero_ssts = zero
+        self.level_one_ssts = one
+        self.level_two_ssts = two
 
