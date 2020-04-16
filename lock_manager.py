@@ -174,6 +174,22 @@ class ReadWriteLock(object):
         self.has_write_owner = False
         return
 
+    # type = 'r'/'w'
+    def does_trans_id_want_lock(self, trans_id, type):
+        for lock in self.waiting_on_locks:
+            if lock[0] == trans_id and lock[1] == type:
+                return True
+        return False
+
+    # type = 'r'/'w'
+    def is_locked(self, type):
+        if len(self.lock_owners) == 0:
+            return False
+        if type == 'w' and self.has_write_owner:
+            return True
+        if type == 'r':
+            return True
+        return False
 
     def is_trans_id_in_current_owners(self, trans_id):
         for o in self.lock_owners:
