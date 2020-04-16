@@ -73,7 +73,7 @@ class Core():
 
     def exec_inst_phase2(self, inst: Instruction, t_id: int):
         if isinstance(inst, str):
-            return
+            return [None, None]
 
         if inst.action == ACTION.RETRIEVE_BY_ID:
             result = self.read_id(inst.table_name, inst.record_id)
@@ -84,9 +84,9 @@ class Core():
             return [LogEntry(result, result, inst, t_id), result]
 
         if inst.action == ACTION.WRITE_RECORD:
-            before_image = self.read_id(inst.table_name, inst.tuple_data[0])
+            before_image = self.read_id(inst.table_name, inst.tuple_data.id)
             result = self.write(inst.table_name, inst.tuple_data)
-            after_image = self.read_id(inst.table_name, inst.tuple_data[0])
+            after_image = self.read_id(inst.table_name, inst.tuple_data.id)
             return [LogEntry(before_image, after_image, inst, t_id), result]
 
         if inst.action == ACTION.DELETE_RECORD:
@@ -96,12 +96,12 @@ class Core():
             return [LogEntry(before_image, after_image, inst, t_id), result]
 
         if inst.action == ACTION.DELETE_TABLE:
-            # TODO fix this for lsm
             self.mem.flush()
-            # TODO implement this
             before_image = self.disk.get_table_storage()
             result = self.delete_table(inst.table_name)
             return [LogEntry(before_image, None, inst, t_id), result]
+
+        return [None, None]
 
     def read_id(self, table: str, rec_id: int):
         if self.disk_org == ORG.SEQ:

@@ -1,3 +1,4 @@
+import networkx as nx
 import sys
 
 class lock_manager(object):
@@ -29,19 +30,19 @@ class lock_manager(object):
 
     #tuple-level locking 
     def is_tuple_read_lock_available(self, trans_id, tuple_id, table_name):
-        return self.is_read_lock_available(trans_id, table_name+"@"+tuple_id)
+        return self.is_read_lock_available(trans_id, table_name+"@"+str(tuple_id))
 
 
     def is_tuple_write_lock_available(self, trans_id, tuple_id, table_name):
-        return self.is_write_lock_available(trans_id, table_name+"@"+tuple_id)
+        return self.is_write_lock_available(trans_id, table_name+"@"+str(tuple_id))
 
 
     def tuple_read_lock(self, trans_id, tuple_id, table_name):
-        self.read_lock(trans_id, table_name+"@"+tuple_id)
+        self.read_lock(trans_id, table_name+"@"+str(tuple_id))
 
 
     def tuple_write_lock(self, trans_id, tuple_id, table_name):
-        self.write_lock(trans_id, table_name+"@"+tuple_id)
+        self.write_lock(trans_id, table_name+"@"+str(tuple_id))
 
 
     #generic methods used by tables and tuples for locking
@@ -117,7 +118,7 @@ class lock_manager(object):
     def read_lock(self, trans_id, key):
         if key not in self.locks:
             print("error: tried to acquire lock when it didn't exist")
-            sys.exit(1)
+            raise Exception
         
         lock = self.locks[key]
         if lock.is_trans_id_in_current_owners(trans_id):
@@ -126,7 +127,7 @@ class lock_manager(object):
         next_in_line = lock.peek_queue()
         if next_in_line[0] != trans_id:
             print("error: tried to acquire lock when you were not next in line")
-            sys.exit(1)
+            raise Exception
     
         lock.acquire_lock_by_next_in_line()
 
@@ -134,7 +135,7 @@ class lock_manager(object):
     def write_lock(self, trans_id, key):
         if key not in self.locks:
             print("error: tried to acquire lock when it didn't exist")
-            sys.exit(1)
+            raise Exception
 
         lock = self.locks[key]
         if lock.is_trans_id_write_owner(trans_id):
@@ -144,7 +145,7 @@ class lock_manager(object):
         next_in_line = lock.peek_queue()
         if next_in_line[0] != trans_id:
             print("error: tried to acquire lock when you were not next in line")
-            sys.exit(1)
+            raise Exception
         lock.acquire_lock_by_next_in_line()
 
 
@@ -163,7 +164,25 @@ class lock_manager(object):
 
 
     def detect_deadlock(self):
-        return
+        graph = nx.DiGraph()
+        for trans_id, lock_list in self.trans_id_to_locks.items():
+            for lock in lock_list:
+
+                if (lock.does_trans_id_want_lock(trans_id, 'r') and lock.is_locked('w')) or \
+                   (lock.does_trans_id_want_lock(trans_id, 'w') and lock.is_locked('w')):
+                       if lock.lock_owners[0][0] != trans_id:
+                           graph.add_edge(trans_id, lock.lock_owners[0][0])
+
+                elif lock.does_trans_id_want_lock(trans_id, 'w') and lock.is_locked('r'):
+                    for target_owner in lock.lock_owners:
+                        if target_owner[0] != trans_id:
+                            graph.add_edge(trans_id, target_owner[0])
+
+        cycles = list(nx.algorithms.cycles.simple_cycles(graph))
+        if len(cycles) != 0:
+            print(f"DEADLOCK DETECTED: {cycles}")
+            return True
+        return False
 
 
 class ReadWriteLock(object):
@@ -174,6 +193,22 @@ class ReadWriteLock(object):
         self.has_write_owner = False
         return
 
+    # type = 'r'/'w'
+    def does_trans_id_want_lock(self, trans_id, type):
+        for lock in self.waiting_on_locks:
+            if lock[0] == trans_id and lock[1] == type:
+                return True
+        return False
+
+    # type = 'r'/'w'
+    def is_locked(self, type):
+        if len(self.lock_owners) == 0:
+            return False
+        if type == 'w' and self.has_write_owner:
+            return True
+        if type == 'r':
+            return True
+        return False
 
     def is_trans_id_in_current_owners(self, trans_id):
         for o in self.lock_owners:
