@@ -118,7 +118,7 @@ class lock_manager(object):
     def read_lock(self, trans_id, key):
         if key not in self.locks:
             print("error: tried to acquire lock when it didn't exist")
-            sys.exit(1)
+            raise Exception
         
         lock = self.locks[key]
         if lock.is_trans_id_in_current_owners(trans_id):
@@ -127,7 +127,7 @@ class lock_manager(object):
         next_in_line = lock.peek_queue()
         if next_in_line[0] != trans_id:
             print("error: tried to acquire lock when you were not next in line")
-            sys.exit(1)
+            raise Exception
     
         lock.acquire_lock_by_next_in_line()
 
@@ -135,7 +135,7 @@ class lock_manager(object):
     def write_lock(self, trans_id, key):
         if key not in self.locks:
             print("error: tried to acquire lock when it didn't exist")
-            sys.exit(1)
+            raise Exception
 
         lock = self.locks[key]
         if lock.is_trans_id_write_owner(trans_id):
@@ -145,7 +145,7 @@ class lock_manager(object):
         next_in_line = lock.peek_queue()
         if next_in_line[0] != trans_id:
             print("error: tried to acquire lock when you were not next in line")
-            sys.exit(1)
+            raise Exception
         lock.acquire_lock_by_next_in_line()
 
 
