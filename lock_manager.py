@@ -1,3 +1,4 @@
+import networkx as nx
 import sys
 
 class lock_manager(object):
@@ -163,7 +164,25 @@ class lock_manager(object):
 
 
     def detect_deadlock(self):
-        return
+        graph = nx.DiGraph()
+        for trans_id, lock_list in self.trans_id_to_locks.items():
+            for lock in lock_list:
+
+                if (lock.does_trans_id_want_lock(trans_id, 'r') and lock.is_locked('w')) or \
+                   (lock.does_trans_id_want_lock(trans_id, 'w') and lock.is_locked('w')):
+                       if lock.lock_owners[0][0] != trans_id:
+                           graph.add_edge(trans_id, lock.lock_owners[0][0])
+
+                elif lock.does_trans_id_want_lock(trans_id, 'w') and lock.is_locked('r'):
+                    for target_owner in lock.lock_owners:
+                        if target_owner[0] != trans_id:
+                            graph.add_edge(trans_id, target_owner[0])
+
+        cycles = list(nx.algorithms.cycles.simple_cycles(graph))
+        if len(cycles) != 0:
+            print(f"DEADLOCK DETECTED: {cycles}")
+            return True
+        return False
 
 
 class ReadWriteLock(object):
