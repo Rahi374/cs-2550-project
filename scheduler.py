@@ -36,13 +36,12 @@ class Scheduler:
         return
 
     def run_inst(self, inst, t_id):
-       Logger.log(inst.to_log())
-       try:
-           log_entry, ret = self.core.exec_inst_phase2(inst, t_id)
-           self.core.print_result(inst, ret)
-           log.append(log_entry)
-       except Exception as e:
-           pass
+        Logger.log(inst.to_log())
+        log_entry, ret = self.core.exec_inst_phase2(inst, t_id)
+        if log_entry is None:
+            return
+        self.core.print_result(inst, ret)
+        self.log.append(log_entry)
 
     def next_inst_seq(self):
         return self.instruction_sequence_sequences[self.seq_pc][0]
@@ -61,13 +60,18 @@ class Scheduler:
         elif self.sched_type == SCHED_TYPE.RAND:
             self.seq_pc = random.randrange(len(self.instruction_sequence_sequences))
 
+    def reset_seq_pc(self):
+        if self.seq_pc >= len(self.instruction_sequence_sequences):
+            self.seq_pc = len(self.instruction_sequence_sequences) - 1
+
     def do_undos(self, t_id: int):
         for log_entry in reversed(self.log):
+            inst = log_entry.inst
             if log_entry.t_id == t_id:
 
                 if inst.action == ACTION.WRITE_RECORD:
                     if len(log_entry.before_image) == 0:
-                         self.core.delete_record(log_entry.inst.table_name, log_entry.inst.record_id)
+                         self.core.delete_record(log_entry.inst.table_name, log_entry.inst.tuple_data.id)
                     else:
                          self.core.write(log_entry.inst.table_name, log_entry.before_image[0])
 
@@ -87,7 +91,7 @@ class Scheduler:
             return self.lock_manager.is_table_write_lock_available(t_id, inst.table_name)
         if inst.action == ACTION.WRITE_RECORD:
             a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
-            b = self.lock_manager.is_tuple_write_lock_available(t_id, inst.record_id, inst.table_name)
+            b = self.lock_manager.is_tuple_write_lock_available(t_id, inst.tuple_data.id, inst.table_name)
             return a and b
         if inst.action == ACTION.DELETE_RECORD:
             a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
@@ -109,7 +113,7 @@ class Scheduler:
             self.lock_manager.table_write_lock(t_id, inst.table_name)
         elif inst.action == ACTION.WRITE_RECORD:
             self.lock_manager.table_read_lock(t_id, inst.table_name)
-            self.lock_manager.tuple_write_lock(t_id, inst.record_id, inst.table_name)
+            self.lock_manager.tuple_write_lock(t_id, inst.tuple_data.id, inst.table_name)
         elif inst.action == ACTION.DELETE_RECORD:
             self.lock_manager.table_read_lock(t_id, inst.table_name)
             self.lock_manager.tuple_write_lock(t_id, inst.record_id, inst.table_name)
@@ -123,22 +127,27 @@ class Scheduler:
 
     def run(self):
         self.core = Core(ORG.LSM, self.mem_size, self.block_size, self.blocks_per_ss)
+        for seq_seq in self.instruction_sequence_sequences:
+            print([id(seq) for seq in seq_seq])
 
         while len(self.instruction_sequence_sequences) != 0:
             next_inst_seq = self.next_inst_seq()
             inst = next_inst_seq.fetch()
+            Logger.trans_id =id(next_inst_seq)
 
             if next_inst_seq.exec_type == EXEC_TYPE.TRANSACTION:
 
-                can_acquire_lock = self.can_acquire_locks(self.seq_pc, inst)
+                can_acquire_lock = self.can_acquire_locks(id(next_inst_seq), inst)
                 if (self.lock_manager.detect_deadlock()):
+                    print(f"terminating {id(next_inst_seq)}")
                     inst = Instruction(ACTION.ABORT)
                     self.do_lock_stuff(id(next_inst_seq), inst)
                     self.remove_current_seq()
+                    self.reset_seq_pc()
                     continue
 
                 if can_acquire_lock:
-                    self.do_lock_stuff(self.seq_pc, inst)
+                    self.do_lock_stuff(id(next_inst_seq), inst)
                 else:
                     self.incr_seq_pc()
                     continue
@@ -149,9 +158,12 @@ class Scheduler:
             # remove completed instruction sequences
             if next_inst_seq.completed():
                 self.remove_current_seq()
+                self.reset_seq_pc()
                 continue
 
             self.incr_seq_pc()
 
+        self.core.mem.print_cache()
+        self.core.mem.flush()
         self.core.disk.kill_all_compaction_threads()
         Logger.write_log()
