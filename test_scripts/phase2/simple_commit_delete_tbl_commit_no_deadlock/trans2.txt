@@ -1,0 +1,14 @@
+B 1
+W A (1, Alice, 412-000-0001)
+R A (1, Alice, 412-000-0001)
+W A (1, Alice, 412-001-0000)
+W A (2, DELETE_THIS, 412-000-0000)
+E A 2
+R A 2
+# Should return Nothing
+W B (1, TBL_A_DELETE, 412-000-0000)
+D A
+W B (2, DONE_DELETE, 412-000-0001)
+R B 2
+R B 412
+C

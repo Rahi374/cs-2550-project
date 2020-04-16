@@ -1,0 +1,9 @@
+B 1
+W X (1, Alice, 412-000-0001)
+R X (1, Alice, 412-000-0001)
+W X (1, Alice, 412-001-0000)
+W X (2, DELETE_THIS, 412-000-0000)
+E X 2
+R X 2
+# Should return Nothing
+C

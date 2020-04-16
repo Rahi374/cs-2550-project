@@ -1,0 +1,11 @@
+B 1
+W A (1, Alice, 412-000-0000)
+W A (2, Bob, 412-000-0001)
+W A (3, Carrie, 412-000-0002)
+R B 1
+# Read should not be valid because table doesnt exist
+
+W B (1, Alice, 412-001-0000)
+M A 412
+W A (1, Alice, 412-999-9999)
+C
