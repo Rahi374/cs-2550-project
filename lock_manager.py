@@ -9,6 +9,11 @@ class lock_manager(object):
         return
 
 
+    def print_locks(self):
+        print(self.locks.keys())
+        for l in self.locks.keys():
+            print(self.locks[l])
+    
     #table-level locking
     def is_table_read_lock_available(self, trans_id, table_name):
         return self.is_read_lock_available(trans_id, table_name)
@@ -43,10 +48,11 @@ class lock_manager(object):
     def is_read_lock_available(self, trans_id, key):
         lock = None
         if key not in self.locks:
-            lock = ReadWriteLock()
+            lock = ReadWriteLock(key)
             self.locks[key] = lock
         else:
             lock = self.locks[key]
+        
 
         if trans_id not in self.trans_id_to_locks:
             self.trans_id_to_locks[trans_id] = set()
@@ -76,7 +82,7 @@ class lock_manager(object):
     def is_write_lock_available(self, trans_id, key):
         lock = None
         if key not in self.locks:
-            lock = ReadWriteLock()
+            lock = ReadWriteLock(key)
             self.locks[key] = lock
         else:
             lock = self.locks[key]
@@ -94,8 +100,12 @@ class lock_manager(object):
             if next_in_line is not None and next_in_line[0] == trans_id:
                 return True
 
+        #check if you are the only read owner and nobody is before you in queue
+        if len(lock.lock_owners) == 1 and lock.lock_owners[0][0] == trans_id and len(lock.waiting_on_locks) == 0:
+                lock.enqueue_trans(trans_id, "w")
+                return True
         # join the queue for the lock
-        if not lock.is_trans_id_in_queue(trans_id):
+        elif not lock.is_trans_id_in_queue(trans_id):
             lock.enqueue_trans(trans_id, "w")
             next_in_line = lock.peek_queue()
             if len(lock.lock_owners) == 0 and next_in_line is not None and next_in_line[0] == trans_id:
@@ -129,6 +139,7 @@ class lock_manager(object):
         lock = self.locks[key]
         if lock.is_trans_id_write_owner(trans_id):
             return
+        lock.release_acquired_read_lock_by_transaction(trans_id)
 
         next_in_line = lock.peek_queue()
         if next_in_line[0] != trans_id:
@@ -156,10 +167,11 @@ class lock_manager(object):
 
 
 class ReadWriteLock(object):
-    lock_owners = [] #can potentially be a list of multiple read owners for one write owner
-    waiting_on_locks = [] #entries are [trans_id, "r"/"w"]
-    has_write_owner = False
-    def __init__(self):
+    def __init__(self, key):
+        self.lock_key = key
+        self.lock_owners = [] #can potentially be a list of multiple read owners for one write owner
+        self.waiting_on_locks = [] #entries are [trans_id, "r"/"w"]
+        self.has_write_owner = False
         return
 
 
@@ -205,3 +217,7 @@ class ReadWriteLock(object):
             self.has_write_owner = False
         self.lock_owners = [t for t in self.lock_owners if t[0] != trans_id]
         self.waiting_on_locks = [t for t in self.waiting_on_locks if t[0] != trans_id]
+
+    def release_acquired_read_lock_by_transaction(self, trans_id):
+        self.lock_owners = [t for t in self.lock_owners if t[0] != trans_id]
+

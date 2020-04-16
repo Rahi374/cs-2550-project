@@ -35,6 +35,13 @@ class TestLockManager(unittest.TestCase):
         # test write lock acquiring again
         lock_man.write_lock(1, "key0")
         self.assertFalse(lock_man.is_write_lock_available(0,"key0"))
+
+        #test upgrading a read lock to a write lock
+        self.assertTrue(lock_man.is_read_lock_available(4, "key1"))
+        lock_man.read_lock(4, "key1")
+        self.assertTrue(lock_man.is_write_lock_available(4, "key1"))
+        lock_man.write_lock(4, "key1")
+        self.assertFalse(lock_man.is_write_lock_available(5, "key1"))
     
 if __name__ == "__main__":
     unittest.main()
