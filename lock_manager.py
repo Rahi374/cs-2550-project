@@ -30,19 +30,19 @@ class lock_manager(object):
 
     #tuple-level locking 
     def is_tuple_read_lock_available(self, trans_id, tuple_id, table_name):
-        return self.is_read_lock_available(trans_id, table_name+"@"+tuple_id)
+        return self.is_read_lock_available(trans_id, table_name+"@"+str(tuple_id))
 
 
     def is_tuple_write_lock_available(self, trans_id, tuple_id, table_name):
-        return self.is_write_lock_available(trans_id, table_name+"@"+tuple_id)
+        return self.is_write_lock_available(trans_id, table_name+"@"+str(tuple_id))
 
 
     def tuple_read_lock(self, trans_id, tuple_id, table_name):
-        self.read_lock(trans_id, table_name+"@"+tuple_id)
+        self.read_lock(trans_id, table_name+"@"+str(tuple_id))
 
 
     def tuple_write_lock(self, trans_id, tuple_id, table_name):
-        self.write_lock(trans_id, table_name+"@"+tuple_id)
+        self.write_lock(trans_id, table_name+"@"+str(tuple_id))
 
 
     #generic methods used by tables and tuples for locking
