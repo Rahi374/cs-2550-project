@@ -1,6 +1,6 @@
 B 1
 W A (1, Alice, 412-000-0001)
-R A (1, Alice, 412-000-0001)
+R A 1
 W A (1, Alice, 412-001-0000)
 W A (2, DELETE_THIS, 412-000-0000)
 E A 2

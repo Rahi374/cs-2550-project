@@ -1,5 +1,5 @@
 B 1
-W FIRST (1, Alice, 412-000-0000)
-W SECOND (1, Alice, 412-000-0000)
+W FIRST (1, Charlie, 412-000-0002)
+W SECOND (1, Delta, 412-000-0003)
 E Y 1
 C
