@@ -37,6 +37,7 @@ class Scheduler:
 
     def run_inst(self, inst, t_id):
         Logger.log(inst.to_log())
+        print(inst)
         log_entry, ret = self.core.exec_inst_phase2(inst, t_id)
         if log_entry is None:
             return
@@ -76,11 +77,14 @@ class Scheduler:
                          self.core.write(log_entry.inst.table_name, log_entry.before_image[0])
 
                 elif inst.action == ACTION.DELETE_RECORD:
+                    if len(log_entry.before_image) == 0:
+                        continue
                     self.core.write(log_entry.inst.table_name, log_entry.before_image[0])
 
                 elif inst.action == ACTION.DELETE_TABLE:
-                    # TODO implement this
-                    self.core.disk.restore_table(log_entry.inst.table_name, log_entry.before_image)
+                    if log_entry.before_image == None:
+                        continue
+                    self.core.disk.restore_table(log_entry.before_image)
 
     def can_acquire_locks(self, t_id, inst):
         if inst.action == ACTION.RETRIEVE_BY_ID:
