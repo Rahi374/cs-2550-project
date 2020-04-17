@@ -491,7 +491,7 @@ class LSMStorage():
                 self.write_records_to_level_SST(recs_to_write, table_name, recs_to_write[0].id, recs_to_write[-1].id, "L2")
                 total_records_needed_written -= self.get_records_per_sst()
             else:
-                recs_to_write = list_of_records[i*self.get_records_per_sst():i*self.get_records_per_ss()+total_records_needed_written]
+                recs_to_write = list_of_records[i*self.get_records_per_sst():i*self.get_records_per_sst()+total_records_needed_written]
                 self.write_records_to_level_SST(recs_to_write, table_name, recs_to_write[0].id, recs_to_write[-1].id, "L2")
                 total_records_needed_written = 0
 
@@ -571,7 +571,7 @@ class LSMStorage():
                 self.write_records_to_level_SST(recs_to_write, table_name, recs_to_write[0].id, recs_to_write[-1].id, "L2")
                 total_records_needed_written -= self.get_records_per_sst()
             else:
-                recs_to_write = list_of_records[i*self.get_records_per_sst():i*self.get_records_per_ss()+total_records_needed_written]
+                recs_to_write = list_of_records[i*self.get_records_per_sst():i*self.get_records_per_sst()+total_records_needed_written]
                 self.write_records_to_level_SST(recs_to_write, table_name, recs_to_write[0].id, recs_to_write[-1].id, "L2")
                 total_records_needed_written = 0
 
