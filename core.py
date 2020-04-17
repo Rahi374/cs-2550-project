@@ -97,7 +97,7 @@ class Core():
 
         if inst.action == ACTION.DELETE_TABLE:
             self.mem.flush()
-            before_image = self.disk.get_table_storage()
+            before_image = self.disk.get_table_storage(inst.table_name)
             result = self.delete_table(inst.table_name)
             return [LogEntry(before_image, None, inst, t_id), result]
 
