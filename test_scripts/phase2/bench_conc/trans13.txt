@@ -1,0 +1,102 @@
+B 1
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+R X 0
+W X (0, Alice, 000-000-0000)
+C
