@@ -236,7 +236,7 @@ class MemLSM():
         #search in Storage
         res = self.storage.get_records(area, tbl_name, pks, found)
         if res == -1:
-            return res
+            return []
             
         bas, found = res
         
