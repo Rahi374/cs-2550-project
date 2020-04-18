@@ -176,6 +176,10 @@ class lock_manager(object):
                        if lock.lock_owners[0][0] != trans_id:
                            graph.add_edge(trans_id, lock.lock_owners[0][0])
 
+                elif lock.does_trans_id_want_lock(trans_id, 'r') and lock.is_locked('r'):
+                    if "@" not in lock.lock_key and lock.lock_owners[0][0] != trans_id:
+                        graph.add_edge(trans_id, lock.lock_owners[0][0])
+
                 elif lock.does_trans_id_want_lock(trans_id, 'w') and lock.is_locked('r'):
                     for target_owner in lock.lock_owners:
                         if target_owner[0] != trans_id:
@@ -198,6 +202,14 @@ class ReadWriteLock(object):
         self.waiting_on_locks = [] #entries are [trans_id, "r"/"w"]
         self.has_write_owner = False
         return
+
+    def trans_id_position_in_queue(self, trans_id, type):
+        i = 0
+        for lock in self.waiting_on_locks:
+            if lock[0] == trans_id and lock[1] == type:
+                return i
+            i += 1
+        return -1
 
     # type = 'r'/'w'
     def does_trans_id_want_lock(self, trans_id, type):
