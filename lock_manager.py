@@ -105,6 +105,9 @@ class lock_manager(object):
         if len(lock.lock_owners) == 1 and lock.lock_owners[0][0] == trans_id and len(lock.waiting_on_locks) == 0:
                 lock.enqueue_trans(trans_id, "w")
                 return True
+        # you are the only read owner and you are at the front of the queue
+        elif len(lock.lock_owners) == 1 and lock.lock_owners[0][0] == trans_id and lock.waiting_on_locks[0][0] == trans_id:
+                return True
         # join the queue for the lock
         elif not lock.is_trans_id_in_queue(trans_id):
             lock.enqueue_trans(trans_id, "w")
