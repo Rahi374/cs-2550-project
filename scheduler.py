@@ -88,18 +88,24 @@ class Scheduler:
 
     def can_acquire_locks(self, t_id, inst):
         if inst.action == ACTION.RETRIEVE_BY_ID:
-            a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
             b = self.lock_manager.is_tuple_read_lock_available(t_id, inst.record_id, inst.table_name)
+            if b is False:
+                return b
+            a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
             return a and b
         if inst.action == ACTION.RETRIEVE_BY_AREA_CODE:
             return self.lock_manager.is_table_write_lock_available(t_id, inst.table_name)
         if inst.action == ACTION.WRITE_RECORD:
-            a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
             b = self.lock_manager.is_tuple_write_lock_available(t_id, inst.tuple_data.id, inst.table_name)
+            if b is False:
+                return b
+            a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
             return a and b
         if inst.action == ACTION.DELETE_RECORD:
-            a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
             b = self.lock_manager.is_tuple_write_lock_available(t_id, inst.record_id, inst.table_name)
+            if b is False:
+                return b
+            a = self.lock_manager.is_table_read_lock_available(t_id, inst.table_name)
             return a and b
         if inst.action == ACTION.DELETE_TABLE:
             return self.lock_manager.is_table_write_lock_available(t_id, inst.table_name)
