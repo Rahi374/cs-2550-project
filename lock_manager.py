@@ -177,8 +177,13 @@ class lock_manager(object):
                            graph.add_edge(trans_id, lock.lock_owners[0][0])
 
                 elif lock.does_trans_id_want_lock(trans_id, 'r') and lock.is_locked('r'):
-                    if "@" not in lock.lock_key and lock.lock_owners[0][0] != trans_id:
-                        graph.add_edge(trans_id, lock.lock_owners[0][0])
+                    # if table lock, and we are not an owner, and something anywhere before us in the queue or the owner is a write
+                    if "@" not in lock.lock_key and trans_id not in [x[0] for x in lock.lock_owners]:
+                        if lock.has_write_owner:
+                            graph.add_edge(trans_id, lock.lock_owners[0][0])
+                        elif lock.get_write_before(trans_id) is not None:
+                            # read locked, but there is write request queued in front of us
+                            graph.add_edge(trans_id, lock.get_write_before(trans_id))
 
                 elif lock.does_trans_id_want_lock(trans_id, 'w') and lock.is_locked('r'):
                     for target_owner in lock.lock_owners:
@@ -202,6 +207,13 @@ class ReadWriteLock(object):
         self.waiting_on_locks = [] #entries are [trans_id, "r"/"w"]
         self.has_write_owner = False
         return
+
+    def get_write_before(self, trans_id):
+        pos = self.trans_id_position_in_queue(trans_id, 'r')
+        for i in range(0, pos):
+            if self.waiting_on_locks[i][1] == 'w' and self.waiting_on_locks[i][0] != trans_id:
+                return self.waiting_on_locks[i][0]
+        return None
 
     def trans_id_position_in_queue(self, trans_id, type):
         i = 0
