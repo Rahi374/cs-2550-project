@@ -177,6 +177,9 @@ class lock_manager(object):
                     for target_owner in lock.lock_owners:
                         if target_owner[0] != trans_id:
                             graph.add_edge(trans_id, target_owner[0])
+                    # if i locked as read, first queued is someone else for write, and i want write
+                    if trans_id in [x[0] for x in lock.lock_owners] and lock.waiting_on_locks[0][0] != trans_id:
+                        graph.add_edge(trans_id, trans_id)
 
         cycles = list(nx.algorithms.cycles.simple_cycles(graph))
         if len(cycles) != 0:
