@@ -1,0 +1,2 @@
+for dir in $(ls test_scripts/phase2 | grep -v txt | grep -v bench); do python3 main2.py rr test_scripts/phase2/$dir/*.txt ; mv log.log test_scripts/phase2/$dir/rr.lg ; hexdump -C storage/*/*/*/* > test_scripts/phase2/$dir/rr.hex ; done
+for dir in $(ls test_scripts/phase2 | grep -v txt | grep -v bench); do python3 main2.py random test_scripts/phase2/$dir/*.txt ; mv log.log test_scripts/phase2/$dir/random.lg ; hexdump -C storage/*/*/*/* > test_scripts/phase2/$dir/random.hex ; done
