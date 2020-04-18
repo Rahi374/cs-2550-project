@@ -48,7 +48,6 @@ class LSMStorage():
         return
 
     def kill_all_compaction_threads(self):
-        print("compaction threads are being killed, this may take up to 10 seconds")
         for thread_key in self.thread_should_run:
             self.thread_should_run[thread_key] = False
 
